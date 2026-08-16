@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BibleAtlas · 1세기 예수 사역 지형도 — 고증 지형 v10</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/maplibre-gl/4.7.1/maplibre-gl.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<div id="map"></div>
+
+<!-- 분봉왕 행정구역 범례 · 상단 고정 (색·통치자·표시 여부를 한 곳에서) -->
+<div id="terrLegend" aria-label="분봉왕 행정구역 범례">
+  <div class="tlTitle">분봉왕 행정구역 <small>눅 3:1 · AD 26~36 빌라도 재임기</small></div>
+  <button id="tlFold" title="범례 접기/펼치기" aria-label="분봉왕 범례 접기">▲</button>
+  <div class="tlItems" id="tlItems"></div>
+  <label class="tlAll"><input type="checkbox" id="tlMaster" checked> 전체</label>
+</div>
+
+<header id="hdr">
+  <button id="hdrToggle" title="설명 패널 접기/펼치기" aria-label="설명 패널 접기">◀</button>
+  <h1><small>BIBLEATLAS · FIRST-CENTURY TERRAIN LAB</small>예수님 사역기의 땅 — 예루살렘과 요단</h1>
+  <p>예수님·세례 요한 사역기의 <b>지형·고고학 앵커</b>를 현대 DEM 위에 분리해 재구성합니다.
+  요단 저지대에서 유대 중앙산지로 올라가는 고도차, 1세기 도로 회랑, 성전산·헤롯 건축을
+  <b>같은 좌표·같은 고도 기준</b>으로 읽도록 정합성을 맞췄습니다.</p>
+  <p class="hint">A 고고학 앵커 · B 문헌+고고학 근사 · C 전승/위치 논쟁<br>
+  지형=현대 DEM(지표) · 고대 건축=별도 재구성 · 3D는 정오 조명·입체 강화 기본 ON</p>
+</header>
+
+<div id="routes" aria-label="빠른 실행">
+  <button class="chip" data-route="jj">해안→베레아 전체 단면</button>
+  <button class="chip" data-route="ew">동서 횡단 단면</button>
+  <button class="chip" data-route="rift">요단 지구대 단면</button>
+  <button class="chip draw" id="drawBtn">✏️ 직접 그리기</button>
+  <button class="chip" id="fitAll">🔭 전체 보기</button>
+  <button class="chip" id="templeView">🏛️ 헤롯 성전 보기</button>
+
+  <!-- legacy toggle hooks kept for compatibility, hidden from layout -->
+  <button class="chip tog on legacyCtl" id="togTerr">🗺️ 분봉 행정구역</button>
+  <button class="chip tog on legacyCtl" id="togJesus">✝️ 예수님 사역 여정</button>
+  <button class="chip tog on legacyCtl" id="togJohn">🕊️ 세례 요한 여정</button>
+  <button class="chip tog on legacyCtl" id="baseMode">🏺 고증 배경</button>
+  <button class="chip tog on legacyCtl" id="togBld">🏛️ 1세기 건축 재구성</button>
+  <button class="chip tog on legacyCtl on" id="togExag">⛰️ 지형 시각 보조</button>
+</div>
+
+<div id="treeDock">
+  <button id="treeToggleBtn" class="chip">☰ 레이어 트리</button>
+  <div id="treePanel" class="open" role="tree" aria-label="레이어 트리">
+    <details open>
+      <summary>배경 · 지형</summary>
+      <label><input type="checkbox" id="treeBaseMode" checked> 1세기 고증 배경</label>
+      <label><input type="checkbox" id="treeBld" checked> 1세기 건축 재구성</label>
+      <label><input type="checkbox" id="treeExag" checked> 지형 입체 강화 (해발 수치는 동일)</label>
+      <label><input type="checkbox" id="treePoints" checked> 고증 포인트 HUD 라벨</label>
+      <label><input type="checkbox" id="treeKeyPlaces" checked> 1세기 핵심 지명 (빨간 점)</label>
+      <label><input type="checkbox" id="treeOsm"> OSM 도로·지명 겹쳐 보기</label>
+      <div class="rangeRow"><span>OSM 진하기</span><input type="range" id="osmOpacity" min="10" max="100" value="55"></div>
+    </details>
+
+    <details open>
+      <summary>분봉왕 행정구역</summary>
+      <label><input type="checkbox" id="treeTerrMaster" checked> 전체 행정구역 보기</label>
+      <div class="treeSub">
+        <label><input type="checkbox" class="terr-item" data-key="judea" checked> 유대 · 사마리아 · 이두매</label>
+        <label><input type="checkbox" class="terr-item" data-key="galilee" checked> 갈릴리</label>
+        <label><input type="checkbox" class="terr-item" data-key="perea" checked> 베레아</label>
+        <label><input type="checkbox" class="terr-item" data-key="ituraea" checked> 이두래 · 드라고닛</label>
+        <label><input type="checkbox" class="terr-item" data-key="decapolis" checked> 데가볼리</label>
+        <div class="rangeRow"><span>불투명도</span><input type="range" id="terrOpacity" min="0" max="100" value="22"></div>
+      </div>
+    </details>
+
+    <details open>
+      <summary>1세기 육로</summary>
+      <label><input type="checkbox" id="treeRoadMaster" checked> 육로 전체 보기</label>
+      <div class="treeSub">
+        <label><input type="checkbox" class="road-item" data-key="jerichoRoad" checked> 예루살렘–여리고 오르막길</label>
+        <label><input type="checkbox" class="road-item" data-key="ridgeRoad" checked> 중앙산지 능선길</label>
+        <label><input type="checkbox" class="road-item" data-key="jordanRoad" checked> 요단 계곡 · 베레아 길</label>
+        <label><input type="checkbox" class="road-item" data-key="viaMaris" checked> 갈릴리–해안 회랑</label>
+      </div>
+    </details>
+
+    <details open>
+      <summary>예수님 사역</summary>
+      <label><input type="checkbox" id="treeJesusLines" checked> 사역 여정 선</label>
+      <label><input type="checkbox" id="treeJesusSites" checked> 사역 포인트</label>
+    </details>
+
+    <details open>
+      <summary>세례 요한 사역</summary>
+      <label><input type="checkbox" id="treeJohnLines" checked> 사역 여정 선</label>
+      <label><input type="checkbox" id="treeJohnSites" checked> 사역 포인트</label>
+    </details>
+  </div>
+</div>
+
+<div id="pointHud" aria-live="polite">
+  <button id="pointHudClose" aria-label="포인트 설명 닫기">✕</button>
+  <div id="pointHudBody"><b>포인트를 선택하세요</b><span>지도 위 HUD 라벨을 누르면 간략 설명이 여기 표시됩니다.</span></div>
+</div>
+
+<div id="accuracyLegend" aria-hidden="true">
+  <div><span class="grade a">A</span><b>고고학 앵커</b> · 유적/실측 위치가 비교적 확실</div>
+  <div><span class="grade b">B</span><b>문헌+고고학 근사</b> · 지점/회랑 단위</div>
+  <div><span class="grade c">C</span><b>전승·논쟁 위치</b> · 정확한 점이 아닌 참고</div>
+  <div style="margin-top:5px">해발은 동일 DEM을 양선형 보간해 지도·단면에 공통 사용. 성전산은 별도 고고학 기준값을 함께 표시.<br>
+  Google Elevation/Photorealistic 3D는 API 키가 필요한 검증 소스이므로 이 단독 HTML에는 키를 내장하지 않습니다.</div>
+</div>
+
+<div id="profilePanel" role="region" aria-label="고도 단면">
+  <div id="profileHead">
+    <span id="profileTitle">단면</span>
+    <span id="profileStats"></span>
+    <span id="secTools">
+      <button id="walkRoute" class="secBtn wide" title="이 경로를 지면 높이에서 따라 이동">🚶 길 따라 이동</button>
+      <button id="secOut" class="secBtn" title="단면 축소" aria-label="단면 축소">−</button>
+      <span id="secZoomLabel">1.0×</span>
+      <button id="secIn" class="secBtn" title="단면 확대" aria-label="단면 확대">＋</button>
+      <button id="secReset" class="secBtn" title="단면 전체 보기" aria-label="단면 전체 보기">⤢</button>
+    </span>
+    <button id="closeProfile" aria-label="단면 닫기">✕</button>
+  </div>
+  <div id="chartWrap">
+    <canvas id="chart"></canvas>
+    <div id="readout"></div>
+  </div>
+</div>
+
+<div id="viewCtl">
+  <button id="rotL" title="왼쪽으로 회전" aria-label="왼쪽으로 회전">⟲</button>
+  <button id="rotR" title="오른쪽으로 회전" aria-label="오른쪽으로 회전">⟳</button>
+  <button id="orbit" title="자동 360° 회전" aria-label="자동 회전">🔄</button>
+</div>
+
+<div id="hud" aria-live="polite">
+  <div class="verse">"내가 산을 향하여 눈을 들리라"<small>성전에 올라가는 노래 · 시편 121:1</small></div>
+  <div class="meters">
+    <span>해발 <b id="hudElev">—</b></span>
+    <span class="climb">상승 <b id="hudClimb">—</b></span>
+    <span>출발점에서 <b id="hudDist">—</b></span>
+  </div>
+  <br><button class="skip" id="skipFlight">비행 건너뛰기</button>
+</div>
+
+<div id="toast"></div>
+
+<div id="errBox" role="alert">
+  <div class="card">
+    <h2>지도를 시작할 수 없습니다</h2>
+    <p id="errMsg"></p>
+    <code id="errDetail"></code>
+  </div>
+</div>
+
+<script src="./scripts/00-env.js"></script>
+
+<script src="./scripts/10-app.js"></script>
+<script src="./scripts/11-app.js"></script>
+<script src="./scripts/12-app.js"></script>
+<script src="./scripts/13-app.js"></script>
+</body>
+</html>
