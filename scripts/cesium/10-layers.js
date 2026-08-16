@@ -15,6 +15,7 @@
 window.BibleAtlasLayers = (function () {
   const G = {};                 // 레이어 그룹 { 이름: [entity...] }
   const labelItems = [];        // 화면 충돌 회피 대상 지명
+  const infoByEntity = new WeakMap();   // 엔티티 → 클릭했을 때 보여 줄 배경 정보
   let viewer = null;
 
   const css = (hex, alpha) => {
@@ -285,6 +286,10 @@ window.BibleAtlasLayers = (function () {
         description: `<b>${s.name || s.n}</b><br>신뢰도 ${s.grade || 'B'}` +
                      (s.note ? `<br>${s.note}` : ''),
       });
+      infoByEntity.set(e, {
+        kind:'site', name:s.name || s.n, sub:'고증 포인트',
+        grade:s.grade || 'B', note:s.note, lng:s.lng, lat:s.lat,
+      });
       registerLabel(e, {
         text,
         kind:'site',
@@ -323,6 +328,11 @@ window.BibleAtlasLayers = (function () {
         },
         description: `<b>${p.n}</b><br>${p.r} 권역` +
           (p.pid ? `<br><a href="https://pleiades.stoa.org/places/${p.pid}" target="_blank">Pleiades ${p.pid}</a>` : ''),
+      });
+      infoByEntity.set(e, {
+        kind:'place', name:p.n, sub:`${p.r} 권역`, grade:p.grade,
+        refs:p.refs, desc:p.desc, pid:p.pid, disputed:p.disputed,
+        lng:p.lng, lat:p.lat,
       });
       registerLabel(e, {
         text,
@@ -416,6 +426,7 @@ window.BibleAtlasLayers = (function () {
 
   return {
     init, setVisible, showRoute, counts,
+    infoFor(entity){ return (entity && infoByEntity.get(entity)) || null; },
     refreshLabels: () => layoutSmartLabels(true),
     get groups(){ return G; },
   };
