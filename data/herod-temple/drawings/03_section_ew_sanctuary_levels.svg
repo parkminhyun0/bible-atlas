@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 680" width="1180" height="680" font-family="Noto Sans KR, Helvetica, Arial, sans-serif">
+<rect width="1180" height="680" fill="#fbfaf6"/>
+<text x="20" y="34" font-size="22" font-weight="700" fill="#222">동서 단면도 (성소 중심축) — 뜰 레벨 누적 및 성소 100×100 단면 (규빗)</text>
+<text x="20.0" y="54.0" font-size="10" fill="#555" text-anchor="start" font-weight="400">레벨(z)은 Middot의 계단 수×½규빗을 누적한 해석값. 이방인의 뜰=0. 서쪽 ←.</text>
+<polygon points="1207.0,600.0 1149.0,600.0 1149.0,582.6 1120.0,582.6 728.5,582.6 728.5,560.9 696.6,560.9 696.6,553.6 508.1,553.6 508.1,536.2 218.1,536.2 218.1,553.6 186.2,553.6 186.2,582.6 157.2,582.6 157.2,600.0 76.0,600.0 76.0,623.2 1207.0,623.2" fill="#e8dfc9" stroke="#333" stroke-width="1.3"/>
+<text x="1178.0" y="614.0" font-size="8" fill="#333" text-anchor="middle" font-weight="400">이방인의 뜰 0</text>
+<text x="1134.5" y="596.6" font-size="8" fill="#333" text-anchor="middle" font-weight="400">헬 +6</text>
+<text x="946.0" y="596.6" font-size="8" fill="#333" text-anchor="middle" font-weight="400">여인의 뜰 +6</text>
+<text x="714.0" y="574.9" font-size="8" fill="#333" text-anchor="middle" font-weight="400">이스라엘 +13.5</text>
+<text x="682.1" y="567.6" font-size="8" fill="#333" text-anchor="middle" font-weight="400">제사장 +16</text>
+<text x="366.0" y="550.2" font-size="8" fill="#333" text-anchor="middle" font-weight="400">성소 바닥 +22 (기초 6 = 12계단)</text>
+<text x="203.6" y="567.6" font-size="8" fill="#333" text-anchor="middle" font-weight="400">후면 11 (+16)</text>
+<text x="171.7" y="596.6" font-size="8" fill="#333" text-anchor="middle" font-weight="400">헬</text>
+<rect x="571.9" y="524.6" width="92.8" height="29.0" fill="#d9c9a3" stroke="#333" stroke-width="1.2" opacity="1"/>
+<text x="618.3" y="543.1" font-size="9" fill="#333" text-anchor="middle" font-weight="400">번제단 10</text>
+<polygon points="664.7,553.6 571.9,553.6 571.9,524.6 664.7,524.6" fill="#d9c9a3" stroke="#333" stroke-width="1"/>
+<rect x="554.5" y="544.9" width="11.6" height="8.7" fill="#9fb7c9" stroke="#335" stroke-width="1" opacity="1"/>
+<rect x="493.6" y="246.2" width="14.5" height="290.0" fill="#cfc4ad" stroke="#222" stroke-width="1.2" opacity="1"/>
+<rect x="444.3" y="246.2" width="17.4" height="290.0" fill="#cfc4ad" stroke="#222" stroke-width="1.2" opacity="1"/>
+<rect x="250.0" y="246.2" width="17.4" height="290.0" fill="#cfc4ad" stroke="#222" stroke-width="1.2" opacity="1"/>
+<rect x="218.1" y="246.2" width="14.5" height="290.0" fill="#cfc4ad" stroke="#222" stroke-width="1.2" opacity="1"/>
+<rect x="232.6" y="246.2" width="17.4" height="290.0" fill="#e6dfd0" stroke="#222" stroke-width="1.2" opacity="1"/>
+<rect x="461.7" y="246.2" width="31.9" height="8.7" fill="#cfc4ad" stroke="#222" stroke-width="1" opacity="1"/>
+<rect x="267.4" y="405.7" width="176.9" height="14.5" fill="#cfc4ad" stroke="#222" stroke-width="1" opacity="1"/>
+<text x="357.3" y="417.4" font-size="8" fill="#222" text-anchor="middle" font-weight="400">천장 5 (1+2+1+1)</text>
+<rect x="267.4" y="263.6" width="176.9" height="26.1" fill="#cfc4ad" stroke="#222" stroke-width="1" opacity="1"/>
+<text x="357.3" y="281.1" font-size="8" fill="#222" text-anchor="middle" font-weight="400">지붕부 9 (1+2+1+1+3+1)</text>
+<rect x="218.1" y="246.2" width="290.0" height="0.1" fill="none" stroke="#222" stroke-width="0" opacity="1"/>
+<text x="357.3" y="344.8" font-size="10" fill="#333" text-anchor="middle" font-weight="400">상층 다락 40</text>
+<text x="386.3" y="478.2" font-size="10" fill="#333" text-anchor="middle" font-weight="400">헤칼 40 (길이 40)</text>
+<text x="296.4" y="478.2" font-size="10" fill="#333" text-anchor="middle" font-weight="400">지성소 20</text>
+<line x1="328.3" y1="536.2" x2="328.3" y2="420.2" stroke="#7a3e8a" stroke-width="2.2"/>
+<line x1="325.4" y1="536.2" x2="325.4" y2="420.2" stroke="#7a3e8a" stroke-width="2.2"/>
+<text x="326.9" y="630.0" font-size="8" fill="#7a3e8a" text-anchor="middle" font-weight="400">이중 휘장 1 (Yoma 51b)</text>
+<text x="479.1" y="397.0" font-size="9" fill="#333" text-anchor="middle" font-weight="400" transform="rotate(-90 479.1 397.0)">울람 11 (높이 100·문 40×20)</text>
+<rect x="444.3" y="478.2" width="17.4" height="58.0" fill="#8a6d2b" stroke="#c9a63a" stroke-width="1" opacity="1"/>
+<text x="453.0" y="513.0" font-size="8" fill="#fff2c0" text-anchor="middle" font-weight="400" transform="rotate(-90 453.0 513.0)">문 20×10</text>
+<rect x="218.1" y="536.2" width="290.0" height="17.4" fill="#d8cdb4" stroke="#222" stroke-width="1" opacity="1"/>
+<text x="363.1" y="547.9" font-size="8" fill="#222" text-anchor="middle" font-weight="400">기초 6</text>
+<line x1="508.1" y1="228.8" x2="218.1" y2="228.8" stroke="#b33" stroke-width="0.8"/>
+<line x1="508.1" y1="224.8" x2="508.1" y2="232.8" stroke="#b33" stroke-width="1"/>
+<line x1="218.1" y1="224.8" x2="218.1" y2="232.8" stroke="#b33" stroke-width="1"/>
+<text x="363.1" y="224.8" font-size="10" fill="#b33" text-anchor="middle" font-weight="400">100</text>
+<line x1="508.1" y1="240.4" x2="493.6" y2="240.4" stroke="#b33" stroke-width="0.8"/>
+<line x1="508.1" y1="236.4" x2="508.1" y2="244.4" stroke="#b33" stroke-width="1"/>
+<line x1="493.6" y1="236.4" x2="493.6" y2="244.4" stroke="#b33" stroke-width="1"/>
+<text x="500.9" y="236.4" font-size="8" fill="#b33" text-anchor="middle" font-weight="400">5</text>
+<line x1="493.6" y1="240.4" x2="461.7" y2="240.4" stroke="#b33" stroke-width="0.8"/>
+<line x1="493.6" y1="236.4" x2="493.6" y2="244.4" stroke="#b33" stroke-width="1"/>
+<line x1="461.7" y1="236.4" x2="461.7" y2="244.4" stroke="#b33" stroke-width="1"/>
+<text x="477.7" y="236.4" font-size="8" fill="#b33" text-anchor="middle" font-weight="400">11</text>
+<line x1="461.7" y1="240.4" x2="444.3" y2="240.4" stroke="#b33" stroke-width="0.8"/>
+<line x1="461.7" y1="236.4" x2="461.7" y2="244.4" stroke="#b33" stroke-width="1"/>
+<line x1="444.3" y1="236.4" x2="444.3" y2="244.4" stroke="#b33" stroke-width="1"/>
+<text x="453.0" y="236.4" font-size="8" fill="#b33" text-anchor="middle" font-weight="400">6</text>
+<line x1="444.3" y1="240.4" x2="328.3" y2="240.4" stroke="#b33" stroke-width="0.8"/>
+<line x1="444.3" y1="236.4" x2="444.3" y2="244.4" stroke="#b33" stroke-width="1"/>
+<line x1="328.3" y1="236.4" x2="328.3" y2="244.4" stroke="#b33" stroke-width="1"/>
+<text x="386.3" y="236.4" font-size="8" fill="#b33" text-anchor="middle" font-weight="400">40</text>
+<line x1="328.3" y1="240.4" x2="325.4" y2="240.4" stroke="#b33" stroke-width="0.8"/>
+<line x1="328.3" y1="236.4" x2="328.3" y2="244.4" stroke="#b33" stroke-width="1"/>
+<line x1="325.4" y1="236.4" x2="325.4" y2="244.4" stroke="#b33" stroke-width="1"/>
+<text x="326.9" y="236.4" font-size="8" fill="#b33" text-anchor="middle" font-weight="400">1</text>
+<line x1="325.4" y1="240.4" x2="267.4" y2="240.4" stroke="#b33" stroke-width="0.8"/>
+<line x1="325.4" y1="236.4" x2="325.4" y2="244.4" stroke="#b33" stroke-width="1"/>
+<line x1="267.4" y1="236.4" x2="267.4" y2="244.4" stroke="#b33" stroke-width="1"/>
+<text x="296.4" y="236.4" font-size="8" fill="#b33" text-anchor="middle" font-weight="400">20</text>
+<line x1="267.4" y1="240.4" x2="250.0" y2="240.4" stroke="#b33" stroke-width="0.8"/>
+<line x1="267.4" y1="236.4" x2="267.4" y2="244.4" stroke="#b33" stroke-width="1"/>
+<line x1="250.0" y1="236.4" x2="250.0" y2="244.4" stroke="#b33" stroke-width="1"/>
+<text x="258.7" y="236.4" font-size="8" fill="#b33" text-anchor="middle" font-weight="400">6</text>
+<line x1="250.0" y1="240.4" x2="232.6" y2="240.4" stroke="#b33" stroke-width="0.8"/>
+<line x1="250.0" y1="236.4" x2="250.0" y2="244.4" stroke="#b33" stroke-width="1"/>
+<line x1="232.6" y1="236.4" x2="232.6" y2="244.4" stroke="#b33" stroke-width="1"/>
+<text x="241.3" y="236.4" font-size="8" fill="#b33" text-anchor="middle" font-weight="400">6</text>
+<line x1="232.6" y1="240.4" x2="218.1" y2="240.4" stroke="#b33" stroke-width="0.8"/>
+<line x1="232.6" y1="236.4" x2="232.6" y2="244.4" stroke="#b33" stroke-width="1"/>
+<line x1="218.1" y1="236.4" x2="218.1" y2="244.4" stroke="#b33" stroke-width="1"/>
+<text x="225.4" y="236.4" font-size="8" fill="#b33" text-anchor="middle" font-weight="400">5</text>
+<line x1="197.8" y1="536.2" x2="197.8" y2="246.2" stroke="#b33" stroke-width="0.8"/>
+<line x1="193.8" y1="536.2" x2="201.8" y2="536.2" stroke="#b33" stroke-width="1"/>
+<line x1="193.8" y1="246.2" x2="201.8" y2="246.2" stroke="#b33" stroke-width="1"/>
+<text x="203.8" y="394.2" font-size="10" fill="#b33" text-anchor="start" font-weight="400">100 (Middot 4:6)</text>
+<line x1="1192.5" y1="600.0" x2="1192.5" y2="536.2" stroke="#b33" stroke-width="0.8"/>
+<line x1="1188.5" y1="600.0" x2="1196.5" y2="600.0" stroke="#b33" stroke-width="1"/>
+<line x1="1188.5" y1="536.2" x2="1196.5" y2="536.2" stroke="#b33" stroke-width="1"/>
+<text x="1198.5" y="571.1" font-size="10" fill="#b33" text-anchor="start" font-weight="400">22 (해석 누적)</text>
+<text x="20.0" y="660.0" font-size="9" fill="#555" text-anchor="start" font-weight="400">주: 성소 상부(다락·지붕부)는 Middot 4:6의 수치 합산이며 형태(경사/평지붕)는 미상 → 평지붕+난간으로 재구성.</text>
+</svg>

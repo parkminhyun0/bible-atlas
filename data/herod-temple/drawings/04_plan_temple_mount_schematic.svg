@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 820" width="1180" height="820" font-family="Noto Sans KR, Helvetica, Arial, sans-serif">
+<rect width="1180" height="820" fill="#fbfaf6"/>
+<text x="20" y="34" font-size="22" font-weight="700" fill="#222">헤롯 성전산 전체 배치도 (Ritmeyer 재구성 요약, 단위: m, 개략)</text>
+<text x="20.0" y="54.0" font-size="9" fill="#555" text-anchor="start" font-weight="400">외벽: 서 ≈485 m · 동 ≈470 m · 북 ≈315 m · 남 ≈280 m (사다리꼴). 500규빗(262.5 m) 정방형 옛 성전산이 내부에 ≈4.2° 기울어 있음. 좌표는 CesiumJS 배치 시 실제 하람 알샤리프 측량 GeoJSON으로 대체할 것.</text>
+<polygon points="330.0,90.0 755.2,114.3 708.0,738.0 330.0,744.8" fill="#f1ecdd" stroke="#222" stroke-width="2.2"/>
+<text x="322.0" y="420.8" font-size="10" fill="#222" text-anchor="middle" font-weight="400" transform="rotate(-90 322.0 420.8)">서벽 ≈485 m (통곡의 벽 구간 포함)</text>
+<text x="532.5" y="82.0" font-size="10" fill="#222" text-anchor="middle" font-weight="400">북벽 ≈315 m</text>
+<text x="735.0" y="427.5" font-size="10" fill="#222" text-anchor="middle" font-weight="400" transform="rotate(90 735.0 427.5)">동벽 ≈470 m (기드론 골짜기 위)</text>
+<text x="519.0" y="760.8" font-size="10" fill="#222" text-anchor="middle" font-weight="400">남벽 ≈280 m — 왕의 주랑(Royal Stoa) 3랑·162주</text>
+<rect x="350.2" y="110.2" width="384.8" height="614.2" fill="none" stroke="#777" stroke-width="1" opacity="1" stroke-dasharray="5,4"/>
+<text x="532.5" y="130.5" font-size="9" fill="#555" text-anchor="middle" font-weight="400">2열 주랑(높이 25규빗, 폭 30규빗) — 북·서·동(솔로몬 행각)</text>
+<rect x="332.0" y="700.2" width="375.3" height="40.5" fill="#e2d7bd" stroke="#5a3a10" stroke-width="1.2" opacity="1"/>
+<text x="519.0" y="724.5" font-size="9" fill="#5a3a10" text-anchor="middle" font-weight="400">왕의 주랑(바실리카) 폭 ≈33 m</text>
+<polygon points="363.1,243.5 716.5,217.6 742.4,571.0 389.0,596.9" fill="#faf3dc" stroke="#b8860b" stroke-width="1.6" stroke-dasharray="7,4"/>
+<text x="552.8" y="224.1" font-size="9" fill="#8a6508" text-anchor="middle" font-weight="400">헤롯 이전 500규빗 정방형(262.5 m) — Ritmeyer</text>
+<polygon points="437.8,360.6 679.6,342.9 687.6,452.4 445.9,470.2" fill="#efe6c8" stroke="#333" stroke-width="1.4"/>
+<text x="562.8" y="411.2" font-size="9" fill="#333" text-anchor="middle" font-weight="400">내부 성역(소레그·헬·여인의 뜰·아자라·성소) ≈180×82 m</text>
+<polygon points="598.5,377.8 650.4,374.0 654.2,425.9 602.3,429.7" fill="#d7cfbd" stroke="#222" stroke-width="1.6"/>
+<text x="626.3" y="405.8" font-size="9" fill="#222" text-anchor="middle" font-weight="400">성소</text>
+<rect x="321.9" y="36.0" width="108.0" height="60.8" fill="#ddd3bd" stroke="#222" stroke-width="1.5" opacity="1"/>
+<text x="375.9" y="68.4" font-size="9" fill="#222" text-anchor="middle" font-weight="400">안토니아 요새(탑 50·50·50·70규빗)</text>
+<circle cx="330.0" cy="211.5" r="5" fill="#b33" stroke="#fff" stroke-width="1"/>
+<text x="338.0" y="215.5" font-size="8" fill="#b33" text-anchor="start" font-weight="400">워렌 문</text>
+<circle cx="330.0" cy="279.0" r="5" fill="#b33" stroke="#fff" stroke-width="1"/>
+<text x="338.0" y="283.0" font-size="8" fill="#b33" text-anchor="start" font-weight="400">윌슨 아치(둑길)</text>
+<circle cx="330.0" cy="366.8" r="5" fill="#b33" stroke="#fff" stroke-width="1"/>
+<text x="338.0" y="370.8" font-size="8" fill="#b33" text-anchor="start" font-weight="400">바클레이 문</text>
+<circle cx="330.0" cy="670.5" r="5" fill="#b33" stroke="#fff" stroke-width="1"/>
+<text x="338.0" y="674.5" font-size="8" fill="#b33" text-anchor="start" font-weight="400">로빈슨 아치(계단)</text>
+<circle cx="492.0" cy="742.0" r="5" fill="#b33" stroke="#fff" stroke-width="1"/>
+<text x="500.0" y="746.0" font-size="8" fill="#b33" text-anchor="start" font-weight="400">이중(훌다) 문</text>
+<circle cx="586.5" cy="742.0" r="5" fill="#b33" stroke="#fff" stroke-width="1"/>
+<text x="594.5" y="746.0" font-size="8" fill="#b33" text-anchor="start" font-weight="400">삼중(훌다) 문</text>
+<circle cx="737.5" cy="394.3" r="5" fill="#b33" stroke="#fff" stroke-width="1"/>
+<text x="745.5" y="398.3" font-size="8" fill="#b33" text-anchor="start" font-weight="400">수산 문(축선상)</text>
+<circle cx="600.0" cy="100.8" r="5" fill="#b33" stroke="#fff" stroke-width="1"/>
+<text x="608.0" y="104.8" font-size="8" fill="#b33" text-anchor="start" font-weight="400">타디 문(미사용)</text>
+<rect x="438.0" y="746.8" width="89.1" height="14.0" fill="#e8e0cc" stroke="#555" stroke-width="1" opacity="1"/>
+<text x="482.6" y="778.8" font-size="8" fill="#555" text-anchor="middle" font-weight="400">남측 대계단 30단·폭 65.5 m(발굴)</text>
+<line x1="1100.0" y1="120.0" x2="1100.0" y2="80.0" stroke="#222" stroke-width="2"/>
+<polygon points="1100.0,74.0 1094.0,88.0 1106.0,88.0" fill="#222" stroke="#333" stroke-width="1.2"/>
+<text x="1100.0" y="138.0" font-size="12" fill="#222" text-anchor="middle" font-weight="700">N</text>
+<line x1="60.0" y1="790.0" x2="195.0" y2="790.0" stroke="#222" stroke-width="2"/>
+<text x="127.5" y="784.0" font-size="9" fill="#222" text-anchor="middle" font-weight="400">100 m</text>
+<text x="20.0" y="808.0" font-size="9" fill="#555" text-anchor="start" font-weight="400">주: 이 도면은 개략도. 실제 벽선·문 위치는 Ritmeyer 도면/측량 좌표(GeoJSON)로 교체. 성역 위치는 Ritmeyer 가설(성소 = 바위 돔 위치).</text>
+</svg>
