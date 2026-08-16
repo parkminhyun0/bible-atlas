@@ -41,51 +41,36 @@
 
   /* 실사 모드 패널을 헤더 '바로 아래'에 붙인다.
      헤더 높이는 본문 길이·창 폭에 따라 달라지므로 실제 높이를 재서 배치하고,
-     아래쪽 A·B·C 범례와 겹치지 않도록 남은 높이만큼만 차지하게 한다. */
+     아래쪽 뷰 컨트롤·단면 패널과 겹치지 않도록 남은 높이만큼만 차지하게 한다. */
   let realAutoCollapsed = false;      // 공간 부족으로 자동으로 접었는지
   function layoutLeftColumn(){
-    const hdr = $('hdr'), real = $('realCtl'), legend = $('accuracyLegend'),
-          view = $('viewCtl'), profile = $('profilePanel'), realBtn = $('realToggle');
+    const hdr = $('hdr'), real = $('realCtl'), view = $('viewCtl'),
+          profile = $('profilePanel'), realBtn = $('realToggle');
     if (!hdr || !real) return;
 
     /* 좌측 세로 배치
-         헤더 → 실사 모드 → (여백) → 뷰 컨트롤 → A·B·C 범례 → 단면 패널
-       아래쪽 묶음은 단면 패널이 열린 높이만큼 위로 밀려 올라간다.
-       창이 낮아 자리가 모자라면 중요도가 낮은 것부터 숨긴다:
-         ① A·B·C 범례(설명) → ② 뷰 컨트롤 → ③ 실사 모드 패널 */
+         헤더 → 실사 모드 → (여백) → 뷰 컨트롤 → 단면 패널
+       뷰 컨트롤은 단면 패널이 열린 높이만큼 위로 밀려 올라간다.
+       창이 낮아 자리가 모자라면 뷰 컨트롤 → 실사 패널 순으로 접거나 숨긴다. */
     const gap = 10;
-    const hdrBottom = hdr.offsetTop + hdr.offsetHeight;
-    const floor = hdrBottom + gap;                 // 이 선보다 위로는 올라갈 수 없다
+    const floor = hdr.offsetTop + hdr.offsetHeight + gap;   // 이 선보다 위로는 올라갈 수 없다
     const profileH = (profile && profile.classList.contains('open')) ? profile.offsetHeight : 0;
     const base = profileH + 24;
 
-    // ① 범례
-    let legendH = 0, legendShown = false;
-    if (legend){
-      legend.style.display = '';
-      legend.style.bottom = base + 'px';
-      legendShown = legend.offsetTop >= floor;
-      legend.style.display = legendShown ? '' : 'none';
-      legendH = legendShown ? legend.offsetHeight + gap : 0;
-    }
-    // ② 뷰 컨트롤
     let viewTop = null;
     if (view){
       view.style.display = '';
-      view.style.bottom = (base + legendH) + 'px';
+      view.style.bottom = base + 'px';
       const ok = view.offsetTop >= floor;
       view.style.display = ok ? '' : 'none';
       if (ok) viewTop = view.offsetTop;
     }
 
-    // ③ 실사 모드 패널 — 헤더 바로 아래, 남은 공간까지만
-    const top = floor;
-    real.style.top = top + 'px';
-    const limit = viewTop != null ? viewTop
-      : (legendShown && legend ? legend.offsetTop : window.innerHeight - base);
-    const avail = limit - top - 12;
+    real.style.top = floor + 'px';
+    const limit = viewTop != null ? viewTop : (window.innerHeight - base);
+    const avail = limit - floor - 12;
 
-    if (avail < 50){ real.style.display = 'none'; return; }   // 버튼조차 못 넣을 때
+    if (avail < 50){ real.style.display = 'none'; return; }   // 접은 버튼조차 못 넣을 때
     real.style.display = '';
     real.style.maxHeight = avail + 'px';
     real.style.overflowY = real.scrollHeight > avail ? 'auto' : '';
@@ -116,12 +101,6 @@
   window.addEventListener('resize', layoutLeftColumn);
   window.addEventListener('bibleatlas-cesium-ready', layoutLeftColumn);
   setTimeout(layoutLeftColumn, 300);
-
-  /* 상단 분봉왕 범례 접기 */
-  on('tlFold', 'click', () => {
-    const l = $('terrLegend');
-    if (l) l.classList.toggle('folded');
-  });
 
   /* ── 레이어 표시 토글 (트리 체크박스 ↔ Cesium 그룹) ── */
   const TREE_MAP = [
@@ -180,32 +159,66 @@
     V() && V().scene.requestRender();
   });
 
-  // 상단 범례 항목 생성 (index.html 과 같은 모양)
-  const tlItems = $('tlItems'), tlMaster = $('tlMaster');
-  if (tlItems && typeof TERR !== 'undefined'){
-    TERR.forEach(t => {
-      const lab = document.createElement('label');
-      lab.className = 'tlItem';
-      lab.title = `${t.name} — ${t.ruler}`;
-      lab.innerHTML = `<input type="checkbox" checked data-key="${t.key}">` +
-        `<span class="swatch" style="background:${t.color}"></span>` +
-        `<span class="tlName" style="color:${t.color}">${t.name}<span class="tlRuler">${t.ruler}</span></span>`;
-      tlItems.appendChild(lab);
-      lab.querySelector('input').addEventListener('change', ev => {
-        const tree = document.querySelector(`.terr-item[data-key="${t.key}"]`);
-        if (tree){ tree.checked = ev.target.checked; }
-        lab.classList.toggle('off', !ev.target.checked);
-        applyTerritories();
-        if (tlMaster) tlMaster.checked = [...tlItems.querySelectorAll('input')].every(i => i.checked);
-      });
+  /* ── 분봉왕 행정구역: 레이어 트리 라벨에 색 스와치와 통치자명을 붙인다 ──
+     상단 중앙 범례 패널을 없앴으므로, 통치자 정보가 여기서만 보인다.
+     색·이름·통치자는 TERR 데이터에서 읽으므로 데이터를 고치면 함께 바뀐다. */
+  (function decorateTerritoryTree(){
+    if (typeof TERR === 'undefined') return;
+    const byKey = Object.fromEntries(TERR.map(t => [t.key, t]));
+    // 섹션 소제목
+    const master = $('treeTerrMaster');
+    const section = master && master.closest('details');
+    if (section && !section.querySelector('.treeNote')){
+      const note = document.createElement('div');
+      note.className = 'treeNote';
+      note.textContent = '눅 3:1 · AD 26~36 빌라도 재임기';
+      section.querySelector('summary').insertAdjacentElement('afterend', note);
+    }
+    document.querySelectorAll('.terr-item').forEach(box => {
+      const t = byKey[box.dataset.key];
+      if (!t) return;
+      const label = box.closest('label');
+      if (!label || label.querySelector('.terrSwatch')) return;
+      // '로마 총독령 — 본디오 빌라도' → '로마 총독령(본디오 빌라도)'
+      const ruler = String(t.ruler || '').replace(' — ', '(').replace(' (', '(');
+      const rulerText = ruler.includes('(') && !ruler.endsWith(')') ? ruler + ')' : ruler;
+      label.innerHTML = '';
+      label.appendChild(box);
+      const sw = document.createElement('span');
+      sw.className = 'terrSwatch';
+      sw.style.background = t.color;
+      label.appendChild(sw);
+      const txt = document.createElement('span');
+      txt.className = 'terrLabelText';
+      txt.innerHTML = `${t.name} <span class="terrRuler">— ${rulerText}</span>`;
+      label.appendChild(txt);
     });
-    if (tlMaster) tlMaster.addEventListener('change', ev => {
-      tlItems.querySelectorAll('input').forEach(i => { i.checked = ev.target.checked; });
-      terrBoxes.forEach(b => { b.checked = ev.target.checked; });
-      tlItems.querySelectorAll('.tlItem').forEach(l => l.classList.toggle('off', !ev.target.checked));
-      applyTerritories();
-    });
-  }
+  })();
+
+  /* ── 줌 속도 슬라이더 ──────────────────────────────────────
+     휠/트랙패드 줌 이동량에 곱해지는 배율(0.5~5.0). 5.0 이 종전 속도이고
+     기본값 2.0 은 그보다 느리다. 값은 localStorage 에 남겨 새로고침해도 유지된다. */
+  (function initZoomSpeed(){
+    const KEY = 'bibleatlas.zoomSpeed';
+    const slider = $('zoomSpeed'), out = $('zoomSpeedVal');
+    const saved = parseFloat(localStorage.getItem(KEY));
+    const initial = Number.isFinite(saved) ? Math.min(5, Math.max(0.5, saved)) : 2;
+    window.BibleAtlasZoom = { speed: initial };
+    const apply = (v) => {
+      window.BibleAtlasZoom.speed = v;
+      if (out) out.textContent = v.toFixed(1) + '×';
+      // 핀치 줌은 Cesium 이 처리하므로 그쪽 계수도 함께 맞춘다
+      const vw = V();
+      if (vw) vw.scene.screenSpaceCameraController.zoomFactor = v;
+      try { localStorage.setItem(KEY, String(v)); } catch (e) { /* 저장 불가 환경 무시 */ }
+    };
+    if (slider){
+      slider.value = String(initial);
+      slider.addEventListener('input', e => apply(parseFloat(e.target.value)));
+    }
+    apply(initial);
+    window.addEventListener('bibleatlas-cesium-ready', () => apply(window.BibleAtlasZoom.speed));
+  })();
 
   /* ── 경로 칩: 단면 만들기 ── */
   function setActiveChip(btn){
