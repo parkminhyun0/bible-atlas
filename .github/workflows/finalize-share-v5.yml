@@ -1,0 +1,85 @@
+name: Finalize original social preview
+
+on:
+  push:
+    branches:
+      - fix/social-preview-original
+    paths:
+      - .github/workflows/finalize-share-v5.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wire verified original-photo preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          base = 'https://parkminhyun0.github.io/bible-atlas/'
+          old_cesium = base + 'assets/bibleatlas-og-v1.jpg'
+          old_share = base + 'assets/bibleatlas-share-v4.png'
+          new_share = base + 'assets/bibleatlas-share-v5.jpg'
+
+          def required_replace(text, old, new, name):
+              if old not in text:
+                  raise SystemExit(f'missing expected text in {name}: {old}')
+              return text.replace(old, new)
+
+          p = Path('cesium.html')
+          text = p.read_text(encoding='utf-8')
+          text = required_replace(text, old_cesium, new_share, 'cesium.html')
+          text = required_replace(text, '<meta property="og:image:width" content="1200">', '<meta property="og:image:width" content="400">', 'cesium.html')
+          text = required_replace(text, '<meta property="og:image:height" content="630">', '<meta property="og:image:height" content="210">', 'cesium.html')
+          canonical = '<link rel="canonical" href="https://parkminhyun0.github.io/bible-atlas/cesium.html">'
+          if 'rel="image_src"' not in text:
+              text = text.replace(canonical, canonical + '\n<link rel="image_src" href="' + new_share + '">')
+          og_image = '<meta property="og:image" content="' + new_share + '">'
+          if 'property="og:image:url"' not in text:
+              text = text.replace(og_image, og_image + '\n<meta property="og:image:url" content="' + new_share + '">')
+          twitter_image = '<meta name="twitter:image" content="' + new_share + '">'
+          if 'name="twitter:image:src"' not in text:
+              text = text.replace(twitter_image, twitter_image + '\n<meta name="twitter:image:src" content="' + new_share + '">')
+          p.write_text(text, encoding='utf-8')
+
+          for name in ('jesus-ministry.html', 'jesus-ministry-v2.html'):
+              p = Path(name)
+              text = p.read_text(encoding='utf-8')
+              text = required_replace(text, old_share, new_share, name)
+              text = required_replace(text, 'content="image/png"', 'content="image/jpeg"', name)
+              p.write_text(text, encoding='utf-8')
+
+          v2 = Path('jesus-ministry-v2.html').read_text(encoding='utf-8')
+          v3 = v2.replace('jesus-ministry-v2.html', 'jesus-ministry-v3.html')
+          if 'jesus-ministry-v3.html' not in v3 or new_share not in v3:
+              raise SystemExit('failed to build v3 share page')
+          Path('jesus-ministry-v3.html').write_text(v3, encoding='utf-8')
+
+          Path('.github/workflows/verify-og-image-temp.yml').unlink(missing_ok=True)
+          Path('.github/workflows/finalize-share-v5.yml').unlink(missing_ok=True)
+          PY
+      - name: Validate final diff and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f assets/bibleatlas-share-v5.jpg
+          test ! -e .tmp
+          test ! -e .tmp2
+          test ! -e .github/workflows/rebuild-share-v5.yml
+          grep -q 'bibleatlas-share-v5.jpg' cesium.html
+          grep -q 'bibleatlas-share-v5.jpg' jesus-ministry.html
+          grep -q 'bibleatlas-share-v5.jpg' jesus-ministry-v2.html
+          grep -q 'bibleatlas-share-v5.jpg' jesus-ministry-v3.html
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(share): use original-photo preview across share URLs'
+          git push origin HEAD:fix/social-preview-original
