@@ -5,51 +5,63 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify-og-image:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Verify JPEG structure and dimensions
+        with:
+          ref: fix/share-preview-image
+      - name: Repair trailing JPEG marker if needed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('assets/bibleatlas-og-v1.jpg')
+          b=p.read_bytes()
+          print('before_eoi=', b[-2:].hex(), 'bytes=', len(b))
+          if b[-2:] != b'\xff\xd9':
+              p.write_bytes(b + b'\xff\xd9')
+              print('repaired_eoi=ffd9 bytes=', p.stat().st_size)
+          else:
+              print('eoi_already_valid=1')
+          PY
+      - name: Verify baseline JPEG and real decoder
         shell: bash
         run: |
           set -euo pipefail
           IMAGE="assets/bibleatlas-og-v1.jpg"
           file "$IMAGE"
+          python3 -m pip install --disable-pip-version-check -q Pillow
           python3 - <<'PY'
           from pathlib import Path
+          from PIL import Image
           p=Path('assets/bibleatlas-og-v1.jpg')
           b=p.read_bytes()
           assert b[:2] == b'\xff\xd8', f'bad SOI {b[:2].hex()}'
           assert b[-2:] == b'\xff\xd9', f'bad EOI {b[-2:].hex()}'
-          i=2
-          sof=None
-          while i < len(b)-1:
-              if b[i] != 0xff:
-                  i += 1
-                  continue
-              while i < len(b) and b[i] == 0xff:
-                  i += 1
-              if i >= len(b): break
-              marker=b[i]; i += 1
-              if marker in (0xd8,0xd9) or 0xd0 <= marker <= 0xd7:
-                  continue
-              if i+2 > len(b): break
-              n=int.from_bytes(b[i:i+2],'big')
-              if n < 2 or i+n > len(b): break
-              if marker in (0xc0,0xc1,0xc2,0xc3,0xc5,0xc6,0xc7,0xc9,0xca,0xcb,0xcd,0xce,0xcf):
-                  precision=b[i+2]
-                  h=int.from_bytes(b[i+3:i+5],'big')
-                  w=int.from_bytes(b[i+5:i+7],'big')
-                  sof=(marker, precision, w, h)
-                  break
-              i += n
-          assert sof is not None, 'SOF marker not found'
-          marker, precision, w, h = sof
-          print(f'bytes={len(b)} marker=0x{marker:02x} precision={precision} width={w} height={h} eoi={b[-2:].hex()}')
-          assert marker == 0xc0, f'expected baseline SOF0, got 0x{marker:02x}'
-          assert (w,h) == (1200,630), (w,h)
-          print('OG_JPEG_VALID=1')
+          with Image.open(p) as im:
+              print('PIL', im.format, im.size, im.mode, im.info.get('progressive', False))
+              assert im.format == 'JPEG'
+              assert im.size == (1200,630), im.size
+              assert im.mode == 'RGB', im.mode
+              assert not im.info.get('progressive', False)
+              im.load()
+          print(f'bytes={len(b)} eoi={b[-2:].hex()} OG_JPEG_VALID=1')
           PY
+      - name: Commit repaired image to PR branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- assets/bibleatlas-og-v1.jpg; then
+            echo 'No image repair commit needed.'
+            exit 0
+          fi
+          git config user.name 'BibleAtlas CI'
+          git config user.email 'actions@users.noreply.github.com'
+          git add assets/bibleatlas-og-v1.jpg
+          git commit -m 'fix(share): repair JPEG end marker'
+          git push origin HEAD:fix/share-preview-image
