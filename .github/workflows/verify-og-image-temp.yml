@@ -1,67 +1,13 @@
 name: Verify OG Image Temp
 
 on:
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  verify-og-image:
+  idle:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: fix/share-preview-image
-      - name: Repair trailing JPEG marker if needed
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('assets/bibleatlas-og-v1.jpg')
-          b=p.read_bytes()
-          print('before_eoi=', b[-2:].hex(), 'bytes=', len(b))
-          if b[-2:] != b'\xff\xd9':
-              p.write_bytes(b + b'\xff\xd9')
-              print('repaired_eoi=ffd9 bytes=', p.stat().st_size)
-          else:
-              print('eoi_already_valid=1')
-          PY
-      - name: Verify baseline JPEG and real decoder
-        shell: bash
-        run: |
-          set -euo pipefail
-          IMAGE="assets/bibleatlas-og-v1.jpg"
-          file "$IMAGE"
-          python3 -m pip install --disable-pip-version-check -q Pillow
-          python3 - <<'PY'
-          from pathlib import Path
-          from PIL import Image
-          p=Path('assets/bibleatlas-og-v1.jpg')
-          b=p.read_bytes()
-          assert b[:2] == b'\xff\xd8', f'bad SOI {b[:2].hex()}'
-          assert b[-2:] == b'\xff\xd9', f'bad EOI {b[-2:].hex()}'
-          with Image.open(p) as im:
-              print('PIL', im.format, im.size, im.mode, im.info.get('progressive', False))
-              assert im.format == 'JPEG'
-              assert im.size == (1200,630), im.size
-              assert im.mode == 'RGB', im.mode
-              assert not im.info.get('progressive', False)
-              im.load()
-          print(f'bytes={len(b)} eoi={b[-2:].hex()} OG_JPEG_VALID=1')
-          PY
-      - name: Commit repaired image to PR branch
-        shell: bash
-        run: |
-          set -euo pipefail
-          if git diff --quiet -- assets/bibleatlas-og-v1.jpg; then
-            echo 'No image repair commit needed.'
-            exit 0
-          fi
-          git config user.name 'BibleAtlas CI'
-          git config user.email 'actions@users.noreply.github.com'
-          git add assets/bibleatlas-og-v1.jpg
-          git commit -m 'fix(share): repair JPEG end marker'
-          git push origin HEAD:fix/share-preview-image
+      - run: echo "temporarily disabled while preparing verified OG asset"
