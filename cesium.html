@@ -57,6 +57,9 @@
      ① 피치 제한 없이 <b>지면에서 하늘을 올려다보기</b><br>
      ② 시각에 따라 움직이는 <b>실제 지형 그림자</b><br>
      ③ 카메라가 지형을 뚫지 않음 (검은 화면 없음)</p>
+  <p style="margin-top:9px;border-top:1px solid #3a3128;padding-top:8px">
+     <b>조작</b> — 왼쪽 드래그 <b>이동</b> · 오른쪽 드래그 <b>좌우 회전·상하 기울기</b><br>
+     트랙패드 두 손가락 <b>좌우 회전·상하 기울기</b> · 핀치 또는 Shift+휠 <b>확대·축소</b></p>
 </div>
 
 <div class="panel" id="ctl">
@@ -164,6 +167,8 @@ let viewer, placeEntities = [];
     setJewishHour(6);
     flyTempleToOlivet();
 
+    setupMapLibreStyleControls();
+
     /* 그림자맵은 카메라 주변 일정 거리까지만 계산한다. 넓게 조망하면 그 경계가
        어두운 띠로 보이므로, 카메라 고도에 따라 사거리를 늘리고 아주 높은
        고도에서는 지형 그림자를 끈다(그 축척에서는 어차피 보이지 않는다). */
@@ -220,6 +225,95 @@ function sunAltAz(){
   let az = Math.atan2(n.x, n.y) * 180 / Math.PI;
   if (az < 0) az += 360;
   return { alt, az };
+}
+
+/* ══════════════ 조작 방식: 기존 MapLibre 판과 동일하게 ══════════════
+   Cesium 기본값은 좌드래그=지구 회전, 우드래그=줌, 휠=줌이라 익숙한 조작과 다르다.
+   기존 지도와 같은 감각으로 맞춘다:
+     · 좌드래그            지도 이동(팬)
+     · 우드래그            좌우 회전(bearing) + 상하 기울기(pitch)
+     · 트랙패드 두 손가락  좌우 회전 + 상하 기울기
+     · 핀치 / Shift+휠     확대·축소
+   트랙패드 두 손가락 드래그는 브라우저에서 ctrlKey 없는 wheel 이벤트로 오고,
+   핀치는 ctrlKey 가 붙은 wheel 로 온다. 이 차이로 둘을 구분한다. */
+const ORBIT = { headingPerPx: 0.25, pitchPerPx: 0.18, minPitch: -89, maxPitch: -1 };
+
+function pickCenterPosition(){
+  const scene = viewer.scene;
+  const canvas = scene.canvas;
+  const center = new Cesium.Cartesian2(canvas.clientWidth / 2, canvas.clientHeight / 2);
+  // 화면 중앙의 지형 좌표 — 없으면 타원체 교점으로 대체
+  return scene.globe.pick(viewer.camera.getPickRay(center), scene)
+      || viewer.camera.pickEllipsoid(center, scene.globe.ellipsoid);
+}
+
+/** 화면 중앙을 축으로 좌우 회전·상하 기울기 (기존 지도의 우드래그와 같은 감각) */
+function orbitAroundCenter(dHeadingDeg, dPitchDeg){
+  const cam = viewer.camera;
+  const center = pickCenterPosition();
+  if (!center) return;
+  const currentPitch = Cesium.Math.toDegrees(cam.pitch);
+  // 지면 아래로 넘어가거나 수직으로 뒤집히지 않도록 제한
+  let dp = dPitchDeg;
+  if (currentPitch + dp < ORBIT.minPitch) dp = ORBIT.minPitch - currentPitch;
+  if (currentPitch + dp > ORBIT.maxPitch) dp = ORBIT.maxPitch - currentPitch;
+
+  const frame = Cesium.Transforms.eastNorthUpToFixedFrame(center);
+  cam.lookAtTransform(frame);
+  cam.rotateLeft(Cesium.Math.toRadians(dHeadingDeg));
+  if (dp) cam.rotateUp(Cesium.Math.toRadians(dp));
+  cam.lookAtTransform(Cesium.Matrix4.IDENTITY);
+  viewer.scene.requestRender();
+}
+
+function setupMapLibreStyleControls(){
+  const scene = viewer.scene;
+  const ctl = scene.screenSpaceCameraController;
+  const T = Cesium.CameraEventType;
+
+  // 좌드래그 = 지도 이동, 휠·핀치 = 줌, 우드래그는 Cesium 기본 동작에서 떼어낸다
+  ctl.rotateEventTypes = [T.LEFT_DRAG];
+  ctl.translateEventTypes = [T.LEFT_DRAG];
+  ctl.zoomEventTypes = [T.PINCH, T.MIDDLE_DRAG];
+  ctl.tiltEventTypes = [];
+  ctl.lookEventTypes = [];
+
+  /* 우드래그 = 좌우 회전 + 상하 기울기 */
+  const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
+  let dragging = false, last = null;
+  handler.setInputAction((e) => { dragging = true; last = e.position.clone(); },
+    Cesium.ScreenSpaceEventType.RIGHT_DOWN);
+  handler.setInputAction((e) => {
+    if (!dragging || !last) return;
+    const dx = e.endPosition.x - last.x;
+    const dy = e.endPosition.y - last.y;
+    last = e.endPosition.clone();
+    orbitAroundCenter(-dx * ORBIT.headingPerPx, dy * ORBIT.pitchPerPx);
+  }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+  handler.setInputAction(() => { dragging = false; last = null; },
+    Cesium.ScreenSpaceEventType.RIGHT_UP);
+  scene.canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+  /* 트랙패드 두 손가락 = 좌우 회전 + 상하 기울기 / 핀치·Shift+휠 = 줌 */
+  scene.canvas.addEventListener('wheel', (e) => {
+    if (e.ctrlKey || e.shiftKey) return;     // 핀치·Shift+휠은 Cesium 기본 줌으로 넘긴다
+    e.preventDefault();
+    e.stopPropagation();
+    orbitAroundCenter(-e.deltaX * 0.22, -e.deltaY * 0.16);
+  }, { passive: false, capture: true });
+
+  // 핀치(ctrl+wheel)·Shift+휠을 줌으로 처리
+  scene.canvas.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey && !e.shiftKey) return;
+    e.preventDefault();
+    const cam = viewer.camera;
+    const carto = Cesium.Cartographic.fromCartesian(cam.positionWC);
+    const height = carto ? carto.height : 3000;
+    // 고도에 비례한 배율 — 높은 곳에서는 성큼, 지면 근처에서는 촘촘하게
+    const step = Math.max(12, height * 0.22);
+    cam.moveBackward(e.deltaY > 0 ? step : -step);
+    viewer.scene.requestRender();
+  }, { passive: false, capture: true });
 }
 
 /* 카메라 고도에 맞춰 그림자 사거리를 조절한다 */
