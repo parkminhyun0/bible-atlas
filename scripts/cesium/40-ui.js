@@ -413,6 +413,46 @@
     }, Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
   });
 
+  /* ── 지명·고증 포인트를 클릭하면 배경 정보를 보여 준다 ──────────────
+     Cesium 기본 InfoBox 는 꺼 두었으므로(cesium.html), 기존 지도와 같은
+     좌하단 HUD 에 직접 그린다. 내용은 00-geo.js 의 데이터에서 온다. */
+  const GRADE_LABEL = {
+    A:'A · 고고학 앵커', B:'B · 문헌+고고학 근사', C:'C · 전승/위치 논쟁',
+  };
+  function openPlaceHud(info){
+    const body = $('pointHudBody');
+    if (!body) return;
+    const esc = v => String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const rows = [];
+    rows.push(`<b>${esc(info.name)}</b><small>${esc(info.sub || '')}${
+      info.grade ? ' · ' + esc(GRADE_LABEL[info.grade] || info.grade) : ''}</small>`);
+    if (info.refs) rows.push(`<span class="meta">${esc(info.refs)}</span>`);
+    if (info.desc) rows.push(`<span>${esc(info.desc)}</span>`);
+    if (info.note) rows.push(`<span>${esc(info.note)}</span>`);
+    if (info.disputed) rows.push('<span>비정에 학술적 논쟁이 있는 지점입니다. 대표 후보지로만 표시합니다.</span>');
+    rows.push(`<span class="meta">${info.lat.toFixed(4)}°N ${info.lng.toFixed(4)}°E${
+      info.pid ? ` · <a href="https://pleiades.stoa.org/places/${esc(info.pid)}" target="_blank" rel="noopener">Pleiades ${esc(info.pid)}</a>` : ''}</span>`);
+    body.innerHTML = rows.join('');
+    $('pointHud').classList.add('show');
+  }
+
+  let infoHandler = null;
+  function installPlaceInfo(){
+    const v = V();
+    if (!v || infoHandler) return;
+    infoHandler = new Cesium.ScreenSpaceEventHandler(v.scene.canvas);
+    infoHandler.setInputAction((movement) => {
+      if (document.body.classList.contains('drawing')) return;   // 단면 그리는 중에는 비켜 준다
+      const picked = v.scene.pick(movement.position);
+      const info = picked && picked.id && BibleAtlasLayers.infoFor
+        ? BibleAtlasLayers.infoFor(picked.id) : null;
+      if (info) openPlaceHud(info);
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+  }
+  window.addEventListener('bibleatlas-cesium-ready', installPlaceInfo);
+  installPlaceInfo();
+
   /* ── 고증 포인트 HUD 닫기 ── */
   on('pointHudClose', 'click', () => $('pointHud').classList.remove('show'));
 

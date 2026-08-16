@@ -263,3 +263,7 @@
 #routes .chip, #treeToggleBtn{ line-height:20px }
 @media (max-width:900px){ #treeToggleBtn{ --dockBtnW:200px } }
 @media (max-width:640px){ #treeToggleBtn{ --dockBtnW:min(210px,calc(100vw - 20px)) } }
+
+/* 지명 정보 패널 안의 출처 링크 — 어두운 배경에서 읽히도록 금색을 쓴다 */
+#pointHud a{ color:var(--gold); text-decoration:underline; text-underline-offset:2px }
+#pointHud a:hover{ filter:brightness(1.15) }
