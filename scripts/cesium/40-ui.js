@@ -39,6 +39,104 @@
   bindCollapse('hdr', 'hdrToggle');
   bindCollapse('realCtl', 'realToggle');
 
+  /* ── 모바일/태블릿 반응형 셸 ──────────────────────────────
+     Cesium 판은 mobile.css 를 직접 읽지만 MapLibre 전용 29-ui.js 를 싣지 않기
+     때문에 compact-ui/profile-open 상태가 한 번도 붙지 않았다. 그 결과 모바일에서
+     데스크톱 레이아웃이 그대로 남아 레이어 트리와 단면 패널이 겹쳤다.
+     여기서는 Cesium 에 필요한 상태 동기화만 독립적으로 수행한다. */
+  const compactMedia = window.matchMedia('(max-width: 900px), (pointer: coarse) and (max-width: 1180px)');
+  const hdrUi = $('hdr');
+  const hdrToggleUi = $('hdrToggle');
+  const treePanelUi = $('treePanel');
+  const treeToggleUi = $('treeToggleBtn');
+  const profilePanelUi = $('profilePanel');
+  let lastCompactState = null;
+
+  function setPanelCollapsed(panel, btn, collapsed){
+    if (!panel || !btn) return;
+    panel.classList.toggle('collapsed', collapsed);
+    btn.textContent = collapsed ? '▶' : '◀';
+    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    if (panel.id === 'hdr'){
+      btn.setAttribute('aria-label', collapsed ? '설명 패널 펼치기' : '설명 패널 접기');
+    }
+  }
+
+  const compactLabels = [
+    [document.querySelector('.chip[data-route="jj"]'), '해안→베레아'],
+    [document.querySelector('.chip[data-route="ew"]'), '동서 횡단'],
+    [document.querySelector('.chip[data-route="rift"]'), '요단 지구대'],
+    [$('drawBtn'), '✏️ 직접 그리기'],
+    [$('fitAll'), '🔭 전체 보기'],
+    [$('templeView'), '🏛️ 성전 보기'],
+  ];
+
+  function syncCompactLabels(compact){
+    compactLabels.forEach(([el, shortLabel]) => {
+      if (!el) return;
+      if (!el.dataset.fullLabel) el.dataset.fullLabel = el.textContent.trim();
+      if (!el.getAttribute('aria-label')) el.setAttribute('aria-label', el.dataset.fullLabel);
+      el.textContent = compact ? shortLabel : el.dataset.fullLabel;
+    });
+    if (treeToggleUi){
+      if (!treeToggleUi.dataset.fullLabel) treeToggleUi.dataset.fullLabel = treeToggleUi.textContent.trim();
+      treeToggleUi.textContent = compact ? '☰ 레이어' : treeToggleUi.dataset.fullLabel;
+    }
+  }
+
+  function syncProfileOpenState(){
+    document.body.classList.toggle('profile-open', !!profilePanelUi?.classList.contains('open'));
+  }
+  if (profilePanelUi && typeof MutationObserver !== 'undefined'){
+    new MutationObserver(syncProfileOpenState)
+      .observe(profilePanelUi, { attributes:true, attributeFilter:['class'] });
+    syncProfileOpenState();
+  }
+
+  function resizeCesiumSoon(){
+    requestAnimationFrame(() => {
+      const v = V();
+      if (v){
+        try { if (typeof v.resize === 'function') v.resize(); } catch (_) {}
+        try { v.scene.requestRender(); } catch (_) {}
+      }
+      layoutLeftColumn();
+    });
+    setTimeout(() => {
+      const v = V();
+      if (!v) return;
+      try { if (typeof v.resize === 'function') v.resize(); } catch (_) {}
+      try { v.scene.requestRender(); } catch (_) {}
+    }, 180);
+  }
+
+  function applyResponsiveMode(){
+    const compact = compactMedia.matches;
+    document.body.classList.toggle('compact-ui', compact);
+    syncCompactLabels(compact);
+
+    if (compact && lastCompactState !== true){
+      setPanelCollapsed(hdrUi, hdrToggleUi, true);
+      treePanelUi?.classList.add('hidden');
+      treeToggleUi?.setAttribute('aria-expanded', 'false');
+      if (lastCompactState === false) profilePanelUi?.classList.remove('open');
+    }
+
+    if (!compact && lastCompactState === true){
+      setPanelCollapsed(hdrUi, hdrToggleUi, false);
+    }
+
+    lastCompactState = compact;
+    syncProfileOpenState();
+    resizeCesiumSoon();
+  }
+
+  if (compactMedia.addEventListener) compactMedia.addEventListener('change', applyResponsiveMode);
+  else compactMedia.addListener(applyResponsiveMode);
+  window.addEventListener('orientationchange', () => setTimeout(applyResponsiveMode, 120));
+  window.visualViewport?.addEventListener('resize', resizeCesiumSoon);
+  applyResponsiveMode();
+
   /* 실사 모드 패널을 헤더 '바로 아래'에 붙인다.
      헤더 높이는 본문 길이·창 폭에 따라 달라지므로 실제 높이를 재서 배치하고,
      아래쪽 뷰 컨트롤·단면 패널과 겹치지 않도록 남은 높이만큼만 차지하게 한다. */
@@ -324,5 +422,6 @@
     applyRoads();
     const panel = $('treePanel');
     if (panel && !panel.classList.contains('open')) panel.classList.add('open');
+    resizeCesiumSoon();
   });
 })();
