@@ -80,24 +80,40 @@
     font-size:1rem;padding:2px 6px;font-family:inherit}
   #closeProfile:hover{color:var(--stone)}
 
-  /* ── 실사 모드 전용 패널 ── */
-  #realCtl{position:absolute;left:14px;bottom:250px;z-index:13;width:250px;padding:11px 13px;
-    background:#171310ee;border:1px solid #d9a35355;border-radius:12px;box-shadow:0 6px 22px rgba(0,0,0,.5)}
+  /* ── 실사 모드 패널: 헤더 바로 아래에 같은 폭으로 정렬 ── */
+  #realCtl{position:absolute;left:14px;top:210px;z-index:11;max-width:330px;width:330px;
+    background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(8px);
+    border:1px solid #40352277;border-radius:var(--radius);
+    padding:12px 40px 12px 18px;
+    transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+  /* 헤더와 같은 방식의 슬라이드 숨김 — 버튼만 남기고 왼쪽으로 접힌다 */
+  #realCtl.collapsed{transform:translateX(calc(-100% + 38px))}
+  #realCtl.collapsed > *:not(#realToggle){visibility:hidden}
+  #realToggle{position:absolute;top:10px;right:8px;width:26px;height:26px;
+    border-radius:50%;border:1px solid #40352277;background:#241d16;
+    color:var(--gold);cursor:pointer;font-family:inherit;font-size:.72rem;
+    display:flex;align-items:center;justify-content:center;visibility:visible!important}
+  #realToggle:hover{border-color:var(--gold)}
   #realCtl h2{margin:0 0 8px;font-size:.78rem;color:var(--gold);font-weight:700}
   #realCtl .row{display:flex;align-items:center;gap:7px;margin-bottom:8px;font-size:.72rem}
   #realCtl .row label{flex:0 0 46px;color:var(--stone-dim)}
   #realCtl .row input[type=range]{flex:1;accent-color:var(--gold)}
   #realCtl .val{flex:0 0 48px;text-align:right;color:var(--stone);font-variant-numeric:tabular-nums}
   #realCtl .btnRow{display:flex;gap:5px;flex-wrap:wrap}
-  #realCtl button{background:#241d16;border:1px solid #d9a35355;color:var(--stone);border-radius:7px;
-    padding:5px 8px;font-family:inherit;font-size:.7rem;cursor:pointer}
-  #realCtl button:hover{border-color:var(--gold);color:var(--gold)}
+  #realCtl button:not(#realToggle){background:#241d16;border:1px solid #d9a35355;color:var(--stone);
+    border-radius:7px;padding:5px 8px;font-family:inherit;font-size:.7rem;cursor:pointer}
+  #realCtl button:not(#realToggle):hover{border-color:var(--gold);color:var(--gold)}
   #realCtl button.on{background:var(--gold);color:#241c0e;border-color:var(--gold)}
   #realCtl .chk{display:flex;align-items:center;gap:6px;font-size:.71rem;color:var(--stone-dim);margin-top:7px}
   #realCtl .chk input{accent-color:var(--gold)}
   #sunReadout{margin-top:9px;padding-top:8px;border-top:1px solid #3a3128;
     font-size:.69rem;line-height:1.6;color:var(--stone-dim)}
   #sunReadout b{color:var(--stone);font-variant-numeric:tabular-nums}
+  /* 상단 범례: 헤더와 겹치지 않게 */
+  #terrLegend{left:auto;right:300px;transform:none;
+    max-width:min(900px,calc(100vw - 700px))}
+  /* ── 레이어 트리 토글 버튼 활성 표시 ── */
+  #treeToggleBtn[aria-expanded="true"]{background:var(--gold);color:#241c0e;border-color:var(--gold)}
   @media (max-width:1100px){ #realCtl{display:none} }
 </style>
 </head>
@@ -140,8 +156,8 @@
 </div>
 
 <div id="treeDock">
-  <button id="treeToggleBtn" class="chip">☰ 레이어 트리</button>
-  <div id="treePanel" class="open" role="tree" aria-label="레이어 트리">
+  <button id="treeToggleBtn" class="chip" aria-controls="treePanel" aria-expanded="false">☰ 레이어 트리</button>
+  <div id="treePanel" class="hidden" role="tree" aria-label="레이어 트리">
     <details open>
       <summary>배경 · 지형</summary>
       <label><input type="checkbox" id="treeBaseMode" checked> 1세기 고증 배경</label>
@@ -252,6 +268,7 @@
 
 <!-- 실사 모드 전용: 시각·시점·그림자 -->
 <div class="panel" id="realCtl">
+  <button id="realToggle" title="실사 모드 패널 접기/펼치기" aria-label="실사 모드 패널 접기" aria-expanded="true">◀</button>
   <h2>실사 모드</h2>
   <div class="row">
     <label>유대력</label>

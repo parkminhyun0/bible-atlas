@@ -10,15 +10,114 @@
   const $ = id => document.getElementById(id);
   const on = (id, ev, fn) => { const el = $(id); if (el) el.addEventListener(ev, fn); };
 
-  /* ── 레이어 트리 접기 ── */
-  on('treeToggleBtn', 'click', () => {
-    const panel = $('treePanel');
-    if (panel) panel.classList.toggle('open');
-  });
-  on('hdrToggle', 'click', () => {
-    const h = $('hdr');
-    if (h) h.classList.toggle('folded');
-  });
+  /* ── 레이어 트리: 버튼으로 표시/숨김 (기본 숨김) ── */
+  (function initTree(){
+    const btn = $('treeToggleBtn'), panel = $('treePanel');
+    if (!btn || !panel) return;
+    const apply = (open) => {
+      panel.classList.toggle('hidden', !open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    apply(false);                                    // 기본값: 숨김
+    btn.addEventListener('click', () => apply(panel.classList.contains('hidden')));
+  })();
+
+  /* ── 좌측 패널 접기 ──────────────────────────────────────
+     헤더와 실사 모드 패널은 서로 독립적으로 접힌다.
+     styles.css 의 클래스 이름은 'collapsed' 다 — 이전에는 'folded' 를
+     토글하고 있어서 헤더 접기 버튼이 아무 반응도 하지 않았다. */
+  function bindCollapse(panelId, btnId){
+    const panel = $(panelId), btn = $(btnId);
+    if (!panel || !btn) return;
+    btn.addEventListener('click', () => {
+      const collapsed = panel.classList.toggle('collapsed');
+      btn.textContent = collapsed ? '▶' : '◀';
+      btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      if (panelId === 'hdr') layoutLeftColumn();
+    });
+  }
+  bindCollapse('hdr', 'hdrToggle');
+  bindCollapse('realCtl', 'realToggle');
+
+  /* 실사 모드 패널을 헤더 '바로 아래'에 붙인다.
+     헤더 높이는 본문 길이·창 폭에 따라 달라지므로 실제 높이를 재서 배치하고,
+     아래쪽 A·B·C 범례와 겹치지 않도록 남은 높이만큼만 차지하게 한다. */
+  let realAutoCollapsed = false;      // 공간 부족으로 자동으로 접었는지
+  function layoutLeftColumn(){
+    const hdr = $('hdr'), real = $('realCtl'), legend = $('accuracyLegend'),
+          view = $('viewCtl'), profile = $('profilePanel'), realBtn = $('realToggle');
+    if (!hdr || !real) return;
+
+    /* 좌측 세로 배치
+         헤더 → 실사 모드 → (여백) → 뷰 컨트롤 → A·B·C 범례 → 단면 패널
+       아래쪽 묶음은 단면 패널이 열린 높이만큼 위로 밀려 올라간다.
+       창이 낮아 자리가 모자라면 중요도가 낮은 것부터 숨긴다:
+         ① A·B·C 범례(설명) → ② 뷰 컨트롤 → ③ 실사 모드 패널 */
+    const gap = 10;
+    const hdrBottom = hdr.offsetTop + hdr.offsetHeight;
+    const floor = hdrBottom + gap;                 // 이 선보다 위로는 올라갈 수 없다
+    const profileH = (profile && profile.classList.contains('open')) ? profile.offsetHeight : 0;
+    const base = profileH + 24;
+
+    // ① 범례
+    let legendH = 0, legendShown = false;
+    if (legend){
+      legend.style.display = '';
+      legend.style.bottom = base + 'px';
+      legendShown = legend.offsetTop >= floor;
+      legend.style.display = legendShown ? '' : 'none';
+      legendH = legendShown ? legend.offsetHeight + gap : 0;
+    }
+    // ② 뷰 컨트롤
+    let viewTop = null;
+    if (view){
+      view.style.display = '';
+      view.style.bottom = (base + legendH) + 'px';
+      const ok = view.offsetTop >= floor;
+      view.style.display = ok ? '' : 'none';
+      if (ok) viewTop = view.offsetTop;
+    }
+
+    // ③ 실사 모드 패널 — 헤더 바로 아래, 남은 공간까지만
+    const top = floor;
+    real.style.top = top + 'px';
+    const limit = viewTop != null ? viewTop
+      : (legendShown && legend ? legend.offsetTop : window.innerHeight - base);
+    const avail = limit - top - 12;
+
+    if (avail < 50){ real.style.display = 'none'; return; }   // 버튼조차 못 넣을 때
+    real.style.display = '';
+    real.style.maxHeight = avail + 'px';
+    real.style.overflowY = real.scrollHeight > avail ? 'auto' : '';
+
+    if (avail < 130){
+      // 접어서 버튼만 남긴다. 공간이 돌아오면 다시 펼친다(직접 접은 경우는 유지).
+      if (!real.classList.contains('collapsed')){
+        real.classList.add('collapsed');
+        realAutoCollapsed = true;
+        if (realBtn){ realBtn.textContent = '▶'; realBtn.setAttribute('aria-expanded', 'false'); }
+      }
+      return;
+    }
+    if (realAutoCollapsed && real.classList.contains('collapsed')){
+      real.classList.remove('collapsed');
+      realAutoCollapsed = false;
+      if (realBtn){ realBtn.textContent = '◀'; realBtn.setAttribute('aria-expanded', 'true'); }
+    }
+  }
+
+  /* 단면 패널이 열리고 닫힐 때도 좌측 하단 묶음을 다시 배치한다 */
+  (function watchProfile(){
+    const el = $('profilePanel');
+    if (!el || typeof MutationObserver === 'undefined') return;
+    new MutationObserver(() => layoutLeftColumn())
+      .observe(el, { attributes: true, attributeFilter: ['class'] });
+  })();
+  window.addEventListener('resize', layoutLeftColumn);
+  window.addEventListener('bibleatlas-cesium-ready', layoutLeftColumn);
+  setTimeout(layoutLeftColumn, 300);
+
+  /* 상단 분봉왕 범례 접기 */
   on('tlFold', 'click', () => {
     const l = $('terrLegend');
     if (l) l.classList.toggle('folded');
