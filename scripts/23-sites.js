@@ -2,14 +2,8 @@
    좌표 근거: 성전산·감람산(위키피디아 지리좌표), 헤롯 여리고 궁전(툴룰 아부
    엘-알라이크 31.8537/35.4337), 텔 에스-술탄, 베다니(엘아자리야)·벳바게·
    선한 사마리아인 여관 전승지(마알레 아둠밈 능선)는 통용 좌표의 근사값 */
-const SITES = [
-  POINTS.temple, POINTS.herodPalace, POINTS.golgotha, POINTS.bethesda, POINTS.siloam,
-  POINTS.olivet, POINTS.bethphage, POINTS.bethany, POINTS.samaritan,
-  POINTS.jerichoHerod, POINTS.jerichoTell, POINTS.baptism, POINTS.bethlehem
-];
-const GRADE_TEXT = {
-  A:'A · 고고학 앵커', B:'B · 문헌+고고학 근사', C:'C · 전승/위치 논쟁'
-};
+
+
 function showPointHud(site, demElev){
   const hud = document.getElementById('pointHud');
   const body = document.getElementById('pointHudBody');

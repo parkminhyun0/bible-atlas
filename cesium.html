@@ -85,8 +85,20 @@
   <div style="height:10px"></div>
   <h2>표시</h2>
   <label class="chk"><input type="checkbox" id="chkShadow" checked> 지형 그림자</label>
-  <label class="chk"><input type="checkbox" id="chkPlaces" checked> 1세기 핵심 지명</label>
   <label class="chk"><input type="checkbox" id="chkAtmo" checked> 대기 산란</label>
+  <label class="chk"><input type="checkbox" id="chkSites" checked> 고증 포인트 (등급색)</label>
+  <label class="chk"><input type="checkbox" id="chkPlaces" checked> 1세기 핵심 지명 (빨강)</label>
+  <label class="chk"><input type="checkbox" id="chkTerr" checked> 분봉왕 행정구역</label>
+  <label class="chk"><input type="checkbox" id="chkJesus" checked> 예수님 사역 여정</label>
+  <label class="chk"><input type="checkbox" id="chkJohn" checked> 세례 요한 여정</label>
+  <label class="chk"><input type="checkbox" id="chkRoads" checked> 1세기 로마 도로</label>
+  <div style="height:10px"></div>
+  <h2>단면 경로</h2>
+  <div class="btnRow">
+    <button data-route="jj">전체 단면</button>
+    <button data-route="ew">동서 횡단</button>
+    <button data-route="rift">요단 지구대</button>
+  </div>
 </div>
 
 <div class="panel" id="sun">
@@ -97,6 +109,9 @@
 <div id="err"><div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/cesium@1.123/Build/Cesium/Cesium.js"></script>
+<!-- MapLibre 판과 같은 지리 데이터를 그대로 쓴다 (좌표를 고치면 두 화면에 함께 반영) -->
+<script src="./scripts/data/00-geo.js"></script>
+<script src="./scripts/cesium/10-layers.js"></script>
 <script>
 /* ══════════════════════════════════════════════════════════════════════════
    BibleAtlas 실사 모드 프로토타입
@@ -130,7 +145,7 @@ if (typeof Cesium === 'undefined'){
 // ion 자산을 쓰지 않으므로 기본 토큰 요청이 나가지 않도록 비운다
 Cesium.Ion.defaultAccessToken = undefined;
 
-let viewer, placeEntities = [];
+let viewer, layerCounts = {};
 
 (async function init(){
   try{
@@ -163,7 +178,9 @@ let viewer, placeEntities = [];
     scene.shadowMap.maximumDistance = 12000;
     viewer.clock.shouldAnimate = false;
 
-    addPlaces();
+    // 공통 데이터 레이어 (고증 포인트·핵심 지명·행정구역·여정·도로)
+    layerCounts = BibleAtlasLayers.init(viewer);
+    console.log('Cesium 레이어:', layerCounts);
     setJewishHour(6);
     flyTempleToOlivet();
 
@@ -339,53 +356,6 @@ function updateReadout(){
   document.getElementById('camHeight').textContent = carto ? Math.round(carto.height) + ' m' : '—';
 }
 
-/* ── 1세기 핵심 지명 (빨간 점) ─────────────────────────────── */
-const KEY_PLACES = [
-  ['예루살렘',35.2345,31.7767],['베들레헴',35.2024,31.7054],['헤로디온',35.2414,31.6656],
-  ['헤브론',35.0997,31.5326],['엠마오',34.9890,31.8390],['에브라임',35.2960,31.9560],
-  ['쿰란',35.4590,31.7410],['엔게디',35.3880,31.4610],['마사다',35.3536,31.3156],
-  ['아리마대',35.0480,32.0330],['모데인',35.0100,31.9300],['가이사랴',34.8917,32.5000],
-  ['욥바',34.7550,32.0530],['룻다',34.8900,31.9500],['얌니아',34.7400,31.8700],
-  ['안디바드리',34.9350,32.1030],['아소도',34.6500,31.7500],['아스글론',34.5510,31.6658],
-  ['가사',34.4668,31.5017],['돌',34.9200,32.6167],['돌레마이',35.0700,32.9280],
-  ['세바스테',35.1920,32.2800],['세겜',35.2800,32.2130],['그리심산',35.2730,32.2000],
-  ['살렘',35.4300,32.3300],['나사렛',35.2978,32.7021],['세포리스',35.2790,32.7520],
-  ['디베랴',35.5320,32.7950],['막달라',35.5170,32.8250],['고라신',35.5640,32.9110],
-  ['게네사렛',35.5300,32.8500],['나인',35.3450,32.6310],['다볼산',35.3900,32.6870],
-  ['요타파타',35.2760,32.8360],['기샬라',35.4460,33.0250],['벧산',35.5000,32.5000],
-  ['펠라',35.6170,32.4500],['가다라',35.6850,32.6550],['히포스',35.6600,32.7780],
-  ['아빌라',35.8700,32.6800],['거라사',35.8910,32.2810],['빌라델비아',35.9330,31.9500],
-  ['율리아',35.6300,31.8300],['시돈',35.3750,33.5600],['헤르몬산',35.8570,33.4160],
-  ['브엘세바',34.7913,31.2530],['마레사',34.8990,31.6100],
-];
-function addPlaces(){
-  KEY_PLACES.forEach(([name, lng, lat]) => {
-    placeEntities.push(viewer.entities.add({
-      position: Cesium.Cartesian3.fromDegrees(lng, lat),
-      point: {
-        pixelSize: 9,
-        color: Cesium.Color.fromCssColorString('#e02b23'),
-        outlineColor: Cesium.Color.fromCssColorString('#2a0b08'),
-        outlineWidth: 2,
-        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-        disableDepthTestDistance: 0,        // 지형에 가리면 안 보인다(= 실제 가시성)
-      },
-      label: {
-        text: name,
-        font: '600 14px "Noto Sans KR", sans-serif',
-        fillColor: Cesium.Color.fromCssColorString('#ffd9d4'),
-        outlineColor: Cesium.Color.fromCssColorString('#2a0b08'),
-        outlineWidth: 3,
-        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        pixelOffset: new Cesium.Cartesian2(10, 0),
-        horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
-        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-        translucencyByDistance: new Cesium.NearFarScalar(2e4, 1.0, 3e5, 0.0),
-      },
-    }));
-  });
-}
-
 /* ── 시점 프리셋 ────────────────────────────────────────────
    Cesium 은 피치 제한이 없어 지면에서 하늘을 올려다보는 각도가 가능하다.
    MapLibre 는 85°가 하드 리밋이라 수평선 위를 볼 수 없었다. */
@@ -430,8 +400,29 @@ document.getElementById('chkShadow').addEventListener('change', e => {
   viewer.shadows = e.target.checked;
   adaptShadows();
 });
-document.getElementById('chkPlaces').addEventListener('change', e => {
-  placeEntities.forEach(en => { en.show = e.target.checked; });
+/* 레이어 토글 — 체크박스 id 와 레이어 그룹 이름을 짝지운다 */
+[['chkSites','sites'], ['chkPlaces','places'], ['chkTerr','territories'],
+ ['chkJesus','jesus'], ['chkJohn','john'], ['chkRoads','roads']].forEach(([id, group]) => {
+  document.getElementById(id).addEventListener('change', e => {
+    BibleAtlasLayers.setVisible(group, e.target.checked);
+    viewer.scene.requestRender();
+  });
+});
+
+/* 단면 경로 선택 — 경로를 강조하고 그 범위로 시점을 옮긴다 */
+document.querySelectorAll('[data-route]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-route]').forEach(b => b.classList.toggle('on', b === btn));
+    const r = BibleAtlasLayers.showRoute(btn.dataset.route);
+    if (!r) return;
+    const lons = r.pts.map(p => p[0]), lats = r.pts.map(p => p[1]);
+    viewer.camera.flyTo({
+      destination: Cesium.Rectangle.fromDegrees(
+        Math.min(...lons) - 0.08, Math.min(...lats) - 0.08,
+        Math.max(...lons) + 0.08, Math.max(...lats) + 0.08),
+      duration: 2.0,
+    });
+  });
 });
 document.getElementById('chkAtmo').addEventListener('change', e => {
   viewer.scene.skyAtmosphere.show = e.target.checked;
