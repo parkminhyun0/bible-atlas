@@ -15,8 +15,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          PAGE='https://parkminhyun0.github.io/bible-atlas/cesium.html?diag=1'
-          IMAGE='https://parkminhyun0.github.io/bible-atlas/assets/bibleatlas-og-v1.jpg?diag=1'
+          PAGE='https://parkminhyun0.github.io/bible-atlas/cesium.html?diag=2'
+          IMAGE='https://parkminhyun0.github.io/bible-atlas/assets/bibleatlas-og-v1.jpg?diag=2'
 
           echo '=== PAGE ==='
           for ua in 'facebookexternalhit/1.1' 'Twitterbot/1.0' 'LinkedInBot/1.0' 'Mozilla/5.0'; do
@@ -27,18 +27,13 @@ jobs:
           done
 
           echo '=== IMAGE ==='
-          for ua in 'facebookexternalhit/1.1' 'Twitterbot/1.0' 'LinkedInBot/1.0' 'Mozilla/5.0'; do
-            echo "--- UA: $ua"
-            curl -sS -L -D /tmp/image.h -o /tmp/og.jpg -A "$ua" "$IMAGE"
-            awk 'BEGIN{IGNORECASE=1} /^HTTP\/|^content-type:|^content-length:|^cache-control:|^etag:|^x-robots-tag:/ {print}' /tmp/image.h
-            echo "bytes=$(wc -c < /tmp/og.jpg)"
-            file /tmp/og.jpg
-          done
-
-          python3 - <<'PY'
-          from PIL import Image
-          im=Image.open('/tmp/og.jpg')
-          print('PIL', im.format, im.size, im.mode, im.info)
-          im.verify()
-          print('verify=OK')
-          PY
+          curl -sS -L -D /tmp/image.h -o /tmp/og.jpg -A 'facebookexternalhit/1.1' "$IMAGE"
+          awk 'BEGIN{IGNORECASE=1} /^HTTP\/|^content-type:|^content-length:|^cache-control:|^etag:|^x-robots-tag:/ {print}' /tmp/image.h
+          echo "bytes=$(wc -c < /tmp/og.jpg)"
+          file /tmp/og.jpg
+          echo 'first16:'; xxd -l 16 /tmp/og.jpg
+          echo 'last16:'; tail -c 16 /tmp/og.jpg | xxd
+          echo '=== DECODER CHECKS ==='
+          if command -v identify >/dev/null 2>&1; then identify -verbose /tmp/og.jpg | sed -n '1,40p'; else echo 'identify=not-installed'; fi
+          if command -v ffprobe >/dev/null 2>&1; then ffprobe -v error -show_entries stream=codec_name,width,height,pix_fmt -of default=nw=1 /tmp/og.jpg; else echo 'ffprobe=not-installed'; fi
+          if command -v jpeginfo >/dev/null 2>&1; then jpeginfo -c /tmp/og.jpg; else echo 'jpeginfo=not-installed'; fi
