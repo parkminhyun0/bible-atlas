@@ -7,7 +7,8 @@
 <link href="https://cdn.jsdelivr.net/npm/cesium@1.123/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  :root{ --gold:#d9a353; --stone:#ede4d3; --stone-dim:#b3a68e; --ink:#171310; }
+  :root{ --gold:#d9a353; --stone:#ede4d3; --stone-dim:#b3a68e; --ink:#171310;
+    --panel:#171310; --radius:12px; --danger:#c4694f; --below:#6fb3ba; }
   *{ box-sizing:border-box }
   html,body{ margin:0; height:100%; background:#0d0b08; color:var(--stone);
     font-family:'Noto Sans KR',sans-serif; overflow:hidden }
@@ -45,6 +46,37 @@
     background:#0d0b08f2; padding:30px; text-align:center }
   #err.show{ display:flex }
   #err div{ max-width:520px; font-size:.85rem; line-height:1.7 }
+
+  /* ── 고도 단면 패널 (MapLibre 판과 동일한 스타일) ── */
+  #profilePanel{position:absolute;left:14px;right:14px;bottom:14px;z-index:10;
+    background:color-mix(in srgb,var(--panel) 92%,transparent);
+    backdrop-filter:blur(10px);border:1px solid #40352277;
+    border-radius:var(--radius);padding:14px 18px 10px;
+    transform:translateY(calc(100% + 20px));transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+  #profilePanel.open{transform:translateY(0)}
+  #profileHead{display:flex;justify-content:space-between;align-items:baseline;
+    flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  #profileTitle{font-family:'Noto Serif KR',serif;font-weight:700;font-size:1rem;color:var(--gold)}
+  #profileStats{font-size:.76rem;color:var(--stone-dim);display:flex;gap:14px;flex-wrap:wrap}
+  #profileStats b{color:var(--stone);font-weight:700}
+  #secTools{margin-left:auto;display:flex;align-items:center;gap:5px}
+  #secZoomLabel{font-size:.7rem;color:var(--stone-dim);min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
+  .secBtn{background:#241d16;border:1px solid #d9a35355;color:var(--stone);border-radius:7px;
+    min-width:26px;height:26px;padding:0 7px;font-family:inherit;font-size:.78rem;cursor:pointer;line-height:1}
+  .secBtn:hover{border-color:var(--gold);color:var(--gold)}
+  .secBtn.wide{padding:0 10px;font-size:.72rem}
+  .secBtn.flying{background:var(--danger);color:#fff;border-color:var(--danger)}
+  #chart{cursor:crosshair}
+  #profileStats .neg{color:var(--below)}
+  #chartWrap{position:relative}
+  #chart{display:block;width:100%;height:200px;cursor:crosshair}
+  #readout{position:absolute;pointer-events:none;background:#171310ee;
+    border:1px solid var(--gold);border-radius:6px;padding:5px 9px;
+    font-size:.74rem;white-space:nowrap;display:none;transform:translate(-50%,-115%)}
+  #readout b{color:var(--gold)}
+  #closeProfile{background:none;border:none;color:var(--stone-dim);cursor:pointer;
+    font-size:1rem;padding:2px 6px;font-family:inherit}
+  #closeProfile:hover{color:var(--stone)}
 </style>
 </head>
 <body>
@@ -106,12 +138,34 @@
   카메라 피치 <b id="camPitch">—</b> · 고도 <b id="camHeight">—</b>
 </div>
 
+<div id="profilePanel" role="region" aria-label="고도 단면">
+  <div id="profileHead">
+    <span id="profileTitle">단면</span>
+    <span id="profileStats"></span>
+    <span id="secTools">
+      <button id="walkRoute" class="secBtn wide" title="이 경로를 지면 높이에서 따라 이동">🚶 길 따라 이동</button>
+      <button id="secOut" class="secBtn" title="단면 축소" aria-label="단면 축소">−</button>
+      <span id="secZoomLabel">1.0×</span>
+      <button id="secIn" class="secBtn" title="단면 확대" aria-label="단면 확대">＋</button>
+      <button id="secReset" class="secBtn" title="단면 전체 보기" aria-label="단면 전체 보기">⤢</button>
+    </span>
+    <button id="closeProfile" aria-label="단면 닫기">✕</button>
+  </div>
+  <div id="chartWrap">
+    <canvas id="chart"></canvas>
+    <div id="readout"></div>
+  </div>
+</div>
+
 <div id="err"><div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/cesium@1.123/Build/Cesium/Cesium.js"></script>
 <!-- MapLibre 판과 같은 지리 데이터를 그대로 쓴다 (좌표를 고치면 두 화면에 함께 반영) -->
 <script src="./scripts/data/00-geo.js"></script>
+<script src="./scripts/data/10-elevation.js"></script>
 <script src="./scripts/cesium/10-layers.js"></script>
+<script src="./scripts/cesium/20-section.js"></script>
+<script src="./scripts/20-profile.js"></script>
 <script>
 /* ══════════════════════════════════════════════════════════════════════════
    BibleAtlas 실사 모드 프로토타입
@@ -415,6 +469,7 @@ document.querySelectorAll('[data-route]').forEach(btn => {
     document.querySelectorAll('[data-route]').forEach(b => b.classList.toggle('on', b === btn));
     const r = BibleAtlasLayers.showRoute(btn.dataset.route);
     if (!r) return;
+    buildSection(r.pts, r.name, r.marks);   // 하단 고도 단면도 함께 그린다
     const lons = r.pts.map(p => p[0]), lats = r.pts.map(p => p[1]);
     viewer.camera.flyTo({
       destination: Cesium.Rectangle.fromDegrees(
