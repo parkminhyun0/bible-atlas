@@ -21,7 +21,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .tmp/share-v5.b64.part* | base64 --decode > assets/bibleatlas-share-v5.jpg
+          cat .tmp2/share-v5.b64.* | base64 --decode > assets/bibleatlas-share-v5.jpg
           python - <<'PY'
           from pathlib import Path
           import hashlib
@@ -66,7 +66,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf .tmp
+          rm -rf .tmp .tmp2
           rm -f .github/workflows/rebuild-share-v5.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
