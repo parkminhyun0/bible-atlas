@@ -49,9 +49,9 @@ window.BibleAtlasLayers = (function () {
   ];
 
   function sitePriority(s){
-    if ((s.grade || 'B') === 'A') return 96;
-    if ((s.grade || 'B') === 'B') return 80;
-    return 58;
+    if ((s.grade || 'B') === 'A') return 70;
+    if ((s.grade || 'B') === 'B') return 62;
+    return 50;
   }
   function placePriority(p){
     if (MAJOR_PLACE_NAMES.has(p.n)) return 110;
@@ -62,20 +62,22 @@ window.BibleAtlasLayers = (function () {
     return entity;
   }
   function minPriorityForHeight(height){
-    if (height > 180000) return 110;
-    if (height > 80000) return 96;
-    if (height > 35000) return 82;
-    if (height > 18000) return 70;
-    if (height > 8000) return 50;
-    return 0;
+    /* 우선순위는 '누구를 먼저 놓을지' 정하는 값이고, 실제로 몇 개를 띄울지는
+       아래 충돌 판정이 결정한다. 기준을 높게 잡으면 화면에 자리가 남는데도
+       지명이 통째로 빠지므로, 축척에 맞는 최소선만 남긴다. */
+    if (height > 400000) return 96;    // 지구 규모: 대표 도시 + 주요 고증점
+    if (height > 180000) return 72;    // 광역: 일반 지명까지
+    if (height > 80000) return 64;     // 지방: B급 고증점까지
+    if (height > 35000) return 56;     // 권역: 논쟁 지명까지
+    return 0;                          // 근거리·지면: 전부
   }
   function estimateLabelSize(item){
     const text = String(item.text || '').replace(/\s*\*\s*$/, '');
     const lines = text.split('\n');
     const maxChars = Math.max(...lines.map(line => [...line].length), 1);
     return {
-      width: Math.min(220, Math.max(42, maxChars * item.fontPx * 0.92 + 12)),
-      height: lines.length * (item.fontPx + 4) + 6,
+      width: Math.min(260, Math.max(46, maxChars * item.fontPx * 1.02 + 18)),
+      height: lines.length * (item.fontPx + 6) + 10,
     };
   }
   function candidateRect(anchor, candidate, size){
@@ -117,9 +119,14 @@ window.BibleAtlasLayers = (function () {
     return out;
   }
   function samePlaceFamily(a, b){
-    const aa = String(a || '').replace(/\s*\*\s*$/, '');
-    const bb = String(b || '').replace(/\s*\*\s*$/, '');
-    return aa.includes(bb) || bb.includes(aa);
+    const norm = v => String(v || '').replace(/\s*\*\s*$/, '').trim();
+    const aa = norm(a), bb = norm(b);
+    if (!aa || !bb) return false;
+    if (aa === bb) return true;
+    // 한쪽이 다른 쪽의 '이름 + 구분자 + 덧말' 형태일 때만 같은 가족이다.
+    const longer = aa.length >= bb.length ? aa : bb;
+    const shorter = aa.length >= bb.length ? bb : aa;
+    return longer.startsWith(shorter) && /^[\s·・\-—(]/.test(longer.slice(shorter.length));
   }
   function terrainAwarePosition(entity, time){
     const raw = entity.position && entity.position.getValue(time);
@@ -187,7 +194,7 @@ window.BibleAtlasLayers = (function () {
         return;
       }
       const anchor = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, world);
-      if (!anchor || anchor.x < -40 || anchor.y < -40 || anchor.x > width + 40 || anchor.y > height + 40){
+      if (!anchor || anchor.x < 0 || anchor.y < 0 || anchor.x > width || anchor.y > height){
         label.show = false;
         collisionHidden++;
         return;
@@ -258,6 +265,7 @@ window.BibleAtlasLayers = (function () {
           pixelSize: 11, color: css(color),
           outlineColor: css('#171310'), outlineWidth: 2,
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
         },
         label: {
           text,
@@ -271,8 +279,8 @@ window.BibleAtlasLayers = (function () {
           horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
           verticalOrigin: Cesium.VerticalOrigin.CENTER,
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-          disableDepthTestDistance: 150000,
-          translucencyByDistance: new Cesium.NearFarScalar(3e4, 1.0, 4e5, 0.0),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          translucencyByDistance: new Cesium.NearFarScalar(4e5, 1.0, 1.4e6, 0.0),
         },
         description: `<b>${s.name || s.n}</b><br>신뢰도 ${s.grade || 'B'}` +
                      (s.note ? `<br>${s.note}` : ''),
@@ -296,6 +304,7 @@ window.BibleAtlasLayers = (function () {
           pixelSize: 9, color: css('#e02b23', p.disputed ? 0.72 : 1),
           outlineColor: css('#2a0b08'), outlineWidth: 2,
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
         },
         label: {
           text,
@@ -309,8 +318,8 @@ window.BibleAtlasLayers = (function () {
           horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
           verticalOrigin: Cesium.VerticalOrigin.CENTER,
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-          disableDepthTestDistance: 150000,
-          translucencyByDistance: new Cesium.NearFarScalar(2e4, 1.0, 3e5, 0.0),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          translucencyByDistance: new Cesium.NearFarScalar(4e5, 1.0, 1.4e6, 0.0),
         },
         description: `<b>${p.n}</b><br>${p.r} 권역` +
           (p.pid ? `<br><a href="https://pleiades.stoa.org/places/${p.pid}" target="_blank">Pleiades ${p.pid}</a>` : ''),
@@ -351,7 +360,7 @@ window.BibleAtlasLayers = (function () {
           fillColor: css(t.color), outlineColor: css('#171310'), outlineWidth: 3,
           style: Cesium.LabelStyle.FILL_AND_OUTLINE,
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-          translucencyByDistance: new Cesium.NearFarScalar(5e4, 1.0, 8e5, 0.0),
+          translucencyByDistance: new Cesium.NearFarScalar(6e5, 1.0, 1.8e6, 0.0),
         },
       });
     });
