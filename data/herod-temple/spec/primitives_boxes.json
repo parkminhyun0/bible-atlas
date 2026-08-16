@@ -1,0 +1,246 @@
+{
+  "frame": "x+west y+north z+up (m)",
+  "cubit_m": 0.525,
+  "boxes": [
+    {
+      "id": "slab_chel",
+      "center": [
+        84.525,
+        0.0,
+        1.575
+      ],
+      "size": [
+        179.55,
+        81.375,
+        3.15
+      ],
+      "material": "limestone_meleke",
+      "source": "Middot 2:3",
+      "confidence": "C(level)"
+    },
+    {
+      "id": "slab_court_of_women",
+      "center": [
+        35.438,
+        0.0,
+        1.575
+      ],
+      "size": [
+        70.875,
+        70.875,
+        3.15
+      ],
+      "material": "limestone_meleke",
+      "source": "Middot 2:5",
+      "confidence": "A"
+    },
+    {
+      "id": "slab_court_of_israel",
+      "center": [
+        73.763,
+        0.0,
+        3.544
+      ],
+      "size": [
+        5.775,
+        70.875,
+        7.088
+      ],
+      "material": "limestone_meleke",
+      "source": "Middot 2:6",
+      "confidence": "A"
+    },
+    {
+      "id": "slab_azarah_priests_level",
+      "center": [
+        119.963,
+        0.0,
+        4.2
+      ],
+      "size": [
+        98.175,
+        70.875,
+        8.4
+      ],
+      "material": "limestone_meleke",
+      "source": "Middot 5:1",
+      "confidence": "A"
+    },
+    {
+      "id": "walls_chamber_nazirites_SE",
+      "center": [
+        10.5,
+        -24.938,
+        8.4
+      ],
+      "size": [
+        21.0,
+        21.0,
+        10.5
+      ],
+      "material": "limestone_meleke",
+      "source": "Middot 2:5 (height interpretive)",
+      "confidence": "C(height)"
+    },
+    {
+      "id": "walls_chamber_wood_NE",
+      "center": [
+        10.5,
+        24.938,
+        8.4
+      ],
+      "size": [
+        21.0,
+        21.0,
+        10.5
+      ],
+      "material": "limestone_meleke",
+      "source": "Middot 2:5 (height interpretive)",
+      "confidence": "C(height)"
+    },
+    {
+      "id": "walls_chamber_lepers_NW",
+      "center": [
+        60.375,
+        24.938,
+        8.4
+      ],
+      "size": [
+        21.0,
+        21.0,
+        10.5
+      ],
+      "material": "limestone_meleke",
+      "source": "Middot 2:5 (height interpretive)",
+      "confidence": "C(height)"
+    },
+    {
+      "id": "walls_chamber_oil_SW",
+      "center": [
+        60.375,
+        -24.938,
+        8.4
+      ],
+      "size": [
+        21.0,
+        21.0,
+        10.5
+      ],
+      "material": "limestone_meleke",
+      "source": "Middot 2:5 (height interpretive)",
+      "confidence": "C(height)"
+    },
+    {
+      "id": "altar",
+      "center": [
+        90.825,
+        -4.725,
+        11.025
+      ],
+      "size": [
+        16.8,
+        16.8,
+        5.25
+      ],
+      "material": "limestone_worn",
+      "source": "Middot 3:1 (unhewn stone, whitewashed)",
+      "confidence": "A"
+    },
+    {
+      "id": "altar_ramp",
+      "center": [
+        90.825,
+        -21.0,
+        10.763
+      ],
+      "size": [
+        8.4,
+        15.75,
+        4.725
+      ],
+      "material": "limestone_worn",
+      "source": "Middot 3:3 (wedge: model as ramp, top at altar surround level)",
+      "confidence": "A(dims)/C(shape)"
+    },
+    {
+      "id": "laver",
+      "center": [
+        101.325,
+        -5.25,
+        9.188
+      ],
+      "size": [
+        2.1,
+        2.1,
+        1.575
+      ],
+      "material": "corinthian_bronze",
+      "source": "Middot 3:6",
+      "confidence": "C"
+    },
+    {
+      "id": "sanctuary_ulam_block",
+      "center": [
+        116.55,
+        0.0,
+        36.225
+      ],
+      "size": [
+        11.55,
+        52.5,
+        55.65
+      ],
+      "material": "limestone_meleke",
+      "source": "Middot 4:6-7 (facade 100x100)",
+      "confidence": "A"
+    },
+    {
+      "id": "sanctuary_rear_block",
+      "center": [
+        142.8,
+        0.0,
+        36.225
+      ],
+      "size": [
+        40.95,
+        36.75,
+        55.65
+      ],
+      "material": "limestone_meleke",
+      "source": "Middot 4:7 (70 wide; Josephus 60)",
+      "confidence": "B"
+    },
+    {
+      "id": "sanctuary_facade_gilding",
+      "center": [
+        112.088,
+        0.0,
+        37.8
+      ],
+      "size": [
+        2.625,
+        52.5,
+        52.5
+      ],
+      "material": "gold_plate",
+      "source": "War 5.222 (thin shell on E face)",
+      "confidence": "A(text)/C(extent)"
+    },
+    {
+      "id": "nicanor_gate_house",
+      "center": [
+        72.45,
+        0.0,
+        18.244
+      ],
+      "size": [
+        3.15,
+        10.5,
+        30.188
+      ],
+      "material": "limestone_meleke",
+      "source": "War 5.201 (50 cubits)",
+      "confidence": "B"
+    }
+  ]
+}

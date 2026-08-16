@@ -1,0 +1,579 @@
+{
+  "name": "Herod's Temple / Temple Mount c. AD 30 — 3D modeling spec",
+  "version": "0.1.0",
+  "generated_by": "Claude (spec compiled from Middot, Josephus, Ritmeyer; see 01_사료_및_참고자료.md)",
+  "units": {
+    "primary": "cubit",
+    "cubit_m": 0.525,
+    "alt_cubit_m": 0.4445,
+    "note": "all cubit numbers below ×cubit_m → metres"
+  },
+  "frame": {
+    "origin": "inner face of E wall of Court of Women, on Sanctuary axis, at Court of Gentiles pavement",
+    "x": "+west",
+    "y": "+north",
+    "z": "+up",
+    "world_alignment": "inner precinct axis runs E-W; skewed ~4.2° from Herodian outer walls; Shushan Gate on axis (Ritmeyer)"
+  },
+  "levels_cubits": {
+    "court_of_gentiles": 0.0,
+    "chel_and_court_of_women": 6.0,
+    "court_of_israel": 13.5,
+    "court_of_priests": 16.0,
+    "azarah_temple_floor": 22.0,
+    "altar_top": 26.0
+  },
+  "levels_m": {
+    "court_of_gentiles": 0.0,
+    "chel_and_court_of_women": 3.15,
+    "court_of_israel": 7.088,
+    "court_of_priests": 8.4,
+    "azarah_temple_floor": 11.55,
+    "altar_top": 13.65
+  },
+  "plan_cubits": {
+    "court_of_women": [
+      0,
+      135,
+      -67.5,
+      67.5
+    ],
+    "chamber_nazirites_SE": [
+      0,
+      40,
+      -67.5,
+      -27.5
+    ],
+    "chamber_wood_NE": [
+      0,
+      40,
+      27.5,
+      67.5
+    ],
+    "chamber_lepers_NW": [
+      95,
+      135,
+      27.5,
+      67.5
+    ],
+    "chamber_oil_SW": [
+      95,
+      135,
+      -67.5,
+      -27.5
+    ],
+    "nicanor_gate": [
+      135,
+      141,
+      -10,
+      10
+    ],
+    "azarah": [
+      135,
+      322,
+      -67.5,
+      67.5
+    ],
+    "court_of_israel": [
+      135,
+      146,
+      -67.5,
+      67.5
+    ],
+    "court_of_priests": [
+      146,
+      157,
+      -67.5,
+      67.5
+    ],
+    "altar": [
+      157,
+      189,
+      -25,
+      7
+    ],
+    "altar_ramp": [
+      165,
+      181,
+      -55,
+      -25
+    ],
+    "laver_kiyor": [
+      191,
+      195,
+      -12,
+      -8
+    ],
+    "slaughter_area_rings": [
+      157,
+      189,
+      15,
+      39
+    ],
+    "slaughter_tables": [
+      157,
+      189,
+      43,
+      47
+    ],
+    "slaughter_pillars": [
+      157,
+      189,
+      51,
+      55
+    ],
+    "sanctuary_footprint_front": [
+      211,
+      233,
+      -50,
+      50
+    ],
+    "sanctuary_footprint_rear": [
+      233,
+      311,
+      -35,
+      35
+    ],
+    "ulam_wall_E": [
+      211,
+      216,
+      -50,
+      50
+    ],
+    "ulam_interior": [
+      216,
+      227,
+      -50,
+      50
+    ],
+    "hekhal_wall_E": [
+      227,
+      233,
+      -10,
+      10
+    ],
+    "hekhal_interior": [
+      233,
+      273,
+      -10,
+      10
+    ],
+    "traksin_amah": [
+      273,
+      274,
+      -10,
+      10
+    ],
+    "debir_holy_of_holies": [
+      274,
+      294,
+      -10,
+      10
+    ],
+    "hekhal_wall_W": [
+      294,
+      300,
+      -10,
+      10
+    ],
+    "cells_W": [
+      300,
+      306,
+      -10,
+      10
+    ],
+    "outer_wall_W": [
+      306,
+      311,
+      -35,
+      35
+    ],
+    "behind_sanctuary": [
+      311,
+      322,
+      -67.5,
+      67.5
+    ],
+    "chel_terrace": [
+      -10,
+      332,
+      -77.5,
+      77.5
+    ],
+    "soreg_fence": [
+      -13,
+      335,
+      -80.5,
+      80.5
+    ]
+  },
+  "plan_m": {
+    "court_of_women": [
+      0.0,
+      70.875,
+      -35.438,
+      35.438
+    ],
+    "chamber_nazirites_SE": [
+      0.0,
+      21.0,
+      -35.438,
+      -14.438
+    ],
+    "chamber_wood_NE": [
+      0.0,
+      21.0,
+      14.438,
+      35.438
+    ],
+    "chamber_lepers_NW": [
+      49.875,
+      70.875,
+      14.438,
+      35.438
+    ],
+    "chamber_oil_SW": [
+      49.875,
+      70.875,
+      -35.438,
+      -14.438
+    ],
+    "nicanor_gate": [
+      70.875,
+      74.025,
+      -5.25,
+      5.25
+    ],
+    "azarah": [
+      70.875,
+      169.05,
+      -35.438,
+      35.438
+    ],
+    "court_of_israel": [
+      70.875,
+      76.65,
+      -35.438,
+      35.438
+    ],
+    "court_of_priests": [
+      76.65,
+      82.425,
+      -35.438,
+      35.438
+    ],
+    "altar": [
+      82.425,
+      99.225,
+      -13.125,
+      3.675
+    ],
+    "altar_ramp": [
+      86.625,
+      95.025,
+      -28.875,
+      -13.125
+    ],
+    "laver_kiyor": [
+      100.275,
+      102.375,
+      -6.3,
+      -4.2
+    ],
+    "slaughter_area_rings": [
+      82.425,
+      99.225,
+      7.875,
+      20.475
+    ],
+    "slaughter_tables": [
+      82.425,
+      99.225,
+      22.575,
+      24.675
+    ],
+    "slaughter_pillars": [
+      82.425,
+      99.225,
+      26.775,
+      28.875
+    ],
+    "sanctuary_footprint_front": [
+      110.775,
+      122.325,
+      -26.25,
+      26.25
+    ],
+    "sanctuary_footprint_rear": [
+      122.325,
+      163.275,
+      -18.375,
+      18.375
+    ],
+    "ulam_wall_E": [
+      110.775,
+      113.4,
+      -26.25,
+      26.25
+    ],
+    "ulam_interior": [
+      113.4,
+      119.175,
+      -26.25,
+      26.25
+    ],
+    "hekhal_wall_E": [
+      119.175,
+      122.325,
+      -5.25,
+      5.25
+    ],
+    "hekhal_interior": [
+      122.325,
+      143.325,
+      -5.25,
+      5.25
+    ],
+    "traksin_amah": [
+      143.325,
+      143.85,
+      -5.25,
+      5.25
+    ],
+    "debir_holy_of_holies": [
+      143.85,
+      154.35,
+      -5.25,
+      5.25
+    ],
+    "hekhal_wall_W": [
+      154.35,
+      157.5,
+      -5.25,
+      5.25
+    ],
+    "cells_W": [
+      157.5,
+      160.65,
+      -5.25,
+      5.25
+    ],
+    "outer_wall_W": [
+      160.65,
+      163.275,
+      -18.375,
+      18.375
+    ],
+    "behind_sanctuary": [
+      163.275,
+      169.05,
+      -35.438,
+      35.438
+    ],
+    "chel_terrace": [
+      -5.25,
+      174.3,
+      -40.688,
+      40.688
+    ],
+    "soreg_fence": [
+      -6.825,
+      175.875,
+      -42.263,
+      42.263
+    ]
+  },
+  "heights_cubits": {
+    "sanctuary_total": 100,
+    "sanctuary_ulam_facade_width": 100,
+    "hekhal_interior_height": 40,
+    "upper_chamber_height": 40,
+    "foundation": 6,
+    "ulam_entrance": {
+      "h": 40,
+      "w": 20
+    },
+    "hekhal_entrance": {
+      "h": 20,
+      "w": 10
+    },
+    "court_gates": {
+      "h": 20,
+      "w": 10
+    },
+    "nicanor_gate_josephus": {
+      "h": 50,
+      "door_h": 40
+    },
+    "soreg_height_middot_handbreadths": 10,
+    "altar": 10,
+    "colonnade_column_height": 25,
+    "colonnade_width_outer": 30,
+    "antonia_towers": [
+      50,
+      50,
+      50,
+      70
+    ],
+    "roof_bird_spikes": 1
+  },
+  "outer_platform": {
+    "walls_m": {
+      "west": 485,
+      "east": 470,
+      "north": 315,
+      "south": 280
+    },
+    "pre_herodian_square_cubits": 500,
+    "pre_herodian_square_m": 262.5,
+    "square_skew_deg_vs_herodian_walls": 4.2,
+    "western_wall_offset_from_square_m": 25,
+    "royal_stoa": {
+      "columns": 162,
+      "rows": 4,
+      "aisles": 3,
+      "nave_to_aisle_width_ratio": 1.5,
+      "nave_to_aisle_height_ratio": 2.0,
+      "column_height_ft_josephus": 27,
+      "aisle_width_ft": 30,
+      "nave_width_ft": 45,
+      "aisle_height_ft": 50,
+      "nave_height_ft": 100,
+      "source": "Ant. 15.411-416",
+      "length_note": "runs the full south wall (~280 m); Josephus gives one stade for length"
+    },
+    "colonnades": {
+      "type": "double",
+      "columns_per_row_note": "monolithic white marble, 25 cubits (War 5.190-192)",
+      "roof": "cedar, flat"
+    },
+    "gates": {
+      "south": [
+        "Double (Huldah) Gate",
+        "Triple (Huldah) Gate"
+      ],
+      "west": [
+        "Robinson's Arch (stair to Royal Stoa)",
+        "Barclay's Gate",
+        "Wilson's Arch (causeway)",
+        "Warren's Gate"
+      ],
+      "east": [
+        "Shushan Gate (on Temple axis)"
+      ],
+      "north": [
+        "Tadi Gate (unused, Middot 1:3)"
+      ]
+    },
+    "southern_stair": {
+      "steps": 30,
+      "excavated_width_m": 65.5,
+      "treads": "alternating deep/shallow"
+    },
+    "robinsons_arch_span_m": 15.2,
+    "antonia": {
+      "position": "NW corner",
+      "towers_cubits": [
+        50,
+        50,
+        50,
+        70
+      ]
+    },
+    "masonry": {
+      "type": "Herodian ashlar, drafted margins, flat boss",
+      "course_height_m": "~1.0–1.2 (up to ~1.8-2.4 lower courses)",
+      "largest_stone": "Western Wall tunnel 'Western Stone' ~13.6 m long, est. 500+ t",
+      "pilaster_order_top": "inferred from Hebron Machpelah enclosure"
+    }
+  },
+  "materials": {
+    "limestone_meleke": {
+      "hex": "#E9E2CF",
+      "roughness": 0.85,
+      "use": "walls, pavement, sanctuary body (Josephus: white; 'like a snow-covered mountain' War 5.223)"
+    },
+    "limestone_worn": {
+      "hex": "#D8CDB4",
+      "roughness": 0.9,
+      "use": "retaining walls, street level"
+    },
+    "marble_white": {
+      "hex": "#F2F0EA",
+      "roughness": 0.35,
+      "use": "colonnade monolithic columns (War 5.190)"
+    },
+    "gold_plate": {
+      "hex": "#D4AF37",
+      "metallic": 1.0,
+      "roughness": 0.25,
+      "use": "Ulam facade plating, doors, roof spikes, golden vine (War 5.208-224; Middot 3:8)"
+    },
+    "corinthian_bronze": {
+      "hex": "#8C6B3E",
+      "metallic": 1.0,
+      "roughness": 0.4,
+      "use": "Nicanor Gate doors (War 5.201; Middot 2:3)"
+    },
+    "cedar": {
+      "hex": "#8B5A2B",
+      "roughness": 0.7,
+      "use": "portico ceilings, roof beams (War 5.190)"
+    },
+    "terracotta_tile": {
+      "hex": "#B5552F",
+      "roughness": 0.8,
+      "use": "Royal Stoa ridge roof (reconstruction choice)"
+    },
+    "textile_veil": {
+      "hex": "#5B2E7F",
+      "roughness": 0.95,
+      "use": "Babylonian veil: blue/scarlet/purple/fine linen (War 5.212-214)"
+    },
+    "fire_smoke": {
+      "note": "altar fire + smoke column emitters (Tamid)"
+    }
+  },
+  "confidence": {
+    "A_attested_dimension": [
+      "court_of_women",
+      "azarah",
+      "court_of_israel",
+      "court_of_priests",
+      "altar",
+      "altar_ramp",
+      "sanctuary_footprint_front",
+      "sanctuary_footprint_rear",
+      "hekhal_interior",
+      "debir_holy_of_holies",
+      "ulam_interior",
+      "chel_terrace(width)",
+      "sanctuary_total(height)",
+      "colonnade_column_height",
+      "walls_m(outer)"
+    ],
+    "B_attested_but_sources_conflict": [
+      "sanctuary rear width 70 (Middot) vs 60 (Josephus)",
+      "hekhal door 20×10 (Middot) vs 55×16 (Josephus)",
+      "soreg height 10 handbreadths vs 3 cubits",
+      "number of court gates 7 (Middot) vs 13 (Shekalim 6:3)"
+    ],
+    "C_interpretive_reconstruction": [
+      "altar N-S offset",
+      "laver size",
+      "nicanor gate depth",
+      "soreg offset from chel",
+      "level stacking (z) between courts",
+      "Royal Stoa roof form",
+      "facade columns (4 columns per Bar Kokhba coin iconography)",
+      "Ulam side rooms (beit hachalifot) form",
+      "upper chamber openings"
+    ]
+  },
+  "lod_plan": {
+    "LOD0": "terrain + trapezoid platform + retaining walls + Antonia block (for CesiumJS overview)",
+    "LOD1": "colonnades, Royal Stoa, gates, southern stair, Robinson's Arch",
+    "LOD2": "soreg, chel, Court of Women + chambers, Nicanor stair/gate, azarah, altar, sanctuary massing",
+    "LOD3": "sanctuary detail: gilded facade, vine, cornices, doors, veil, menorah/table/incense altar, 38 cells"
+  }
+}
