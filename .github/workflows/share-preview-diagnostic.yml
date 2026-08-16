@@ -1,0 +1,44 @@
+name: Share Preview Diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe live page and OG image as crawlers
+        shell: bash
+        run: |
+          set -euo pipefail
+          PAGE='https://parkminhyun0.github.io/bible-atlas/cesium.html?diag=1'
+          IMAGE='https://parkminhyun0.github.io/bible-atlas/assets/bibleatlas-og-v1.jpg?diag=1'
+
+          echo '=== PAGE ==='
+          for ua in 'facebookexternalhit/1.1' 'Twitterbot/1.0' 'LinkedInBot/1.0' 'Mozilla/5.0'; do
+            echo "--- UA: $ua"
+            curl -sS -L -D /tmp/page.h -o /tmp/page.html -A "$ua" "$PAGE"
+            awk 'BEGIN{IGNORECASE=1} /^HTTP\/|^content-type:|^content-length:|^cache-control:|^etag:|^x-robots-tag:/ {print}' /tmp/page.h
+            grep -E '<meta property="og:|<meta name="twitter:' /tmp/page.html || true
+          done
+
+          echo '=== IMAGE ==='
+          for ua in 'facebookexternalhit/1.1' 'Twitterbot/1.0' 'LinkedInBot/1.0' 'Mozilla/5.0'; do
+            echo "--- UA: $ua"
+            curl -sS -L -D /tmp/image.h -o /tmp/og.jpg -A "$ua" "$IMAGE"
+            awk 'BEGIN{IGNORECASE=1} /^HTTP\/|^content-type:|^content-length:|^cache-control:|^etag:|^x-robots-tag:/ {print}' /tmp/image.h
+            echo "bytes=$(wc -c < /tmp/og.jpg)"
+            file /tmp/og.jpg
+          done
+
+          python3 - <<'PY'
+          from PIL import Image
+          im=Image.open('/tmp/og.jpg')
+          print('PIL', im.format, im.size, im.mode, im.info)
+          im.verify()
+          print('verify=OK')
+          PY
