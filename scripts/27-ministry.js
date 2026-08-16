@@ -1,60 +1,14 @@
 /* ══════════════ 사역 여정 ══════════════ */
 /* 예수님: ①세례·시험 ②갈릴리·북부 순회 ③최후 상경(베레아 경유, 막 10:1) */
-const JESUS_LINES = [
-  // ① 나사렛 → 요단 세례터 → 시험산
-  [[35.2978,32.7021],[35.36,32.55],[35.47,32.40],[35.52,32.15],[35.55,31.95],[35.5500,31.8370],[35.428,31.874]],
-  // ② 갈릴리 순회: 나사렛→가나→가버나움
-  [[35.2978,32.7021],[35.3397,32.7469],[35.46,32.83],[35.5753,32.8809]],
-  // ② 가버나움→벳새다→가이사랴 빌립보 (막 8:27)
-  [[35.5753,32.8809],[35.6308,32.9097],[35.67,33.05],[35.6944,33.2486]],
-  // ② 가버나움→두로 지방 (막 7:24)
-  [[35.5753,32.8809],[35.45,33.00],[35.30,33.15],[35.2038,33.2705]],
-  // ② 가버나움→가다라·거라사인 지방 (막 5)
-  [[35.5753,32.8809],[35.63,32.79],[35.6858,32.6533]],
-  // ②′ 사마리아 통과 (요 4): 예루살렘↔갈릴리, 수가 경유
-  [[35.2354,31.7780],[35.25,32.00],[35.2856,32.2094],[35.28,32.45],[35.2978,32.7021]],
-];
-// ③ 최후 상경: 가버나움 → 요단 동편(베레아) → 여리고 → 예루살렘 (로마 도로 합류)
-const JESUS_FINAL = [
-  [35.5753,32.8809],[35.57,32.66],[35.555,32.45],[35.60,32.22],[35.64,32.00],
-  [35.60,31.86],[35.55,31.84], ...PILGRIM
-];
-/* 세례 요한: 유대 광야 → 세례터(요 1:28) → 아이논(요 3:23) / 마케루스 순교(요세푸스) */
-const JOHN_LINES = [
-  [[35.32,31.72],[35.45,31.79],[35.5500,31.8370]],
-  [[35.5500,31.8370],[35.52,32.10],[35.47,32.35]],
-  [[35.5500,31.8370],[35.6244,31.5667]],
-];
-const JESUS_SITES = [
-  [POINTS.nazareth.name,POINTS.nazareth.lng,POINTS.nazareth.lat,POINTS.nazareth.grade],
-  [POINTS.cana.name,POINTS.cana.lng,POINTS.cana.lat,POINTS.cana.grade],
-  [POINTS.capernaum.name,POINTS.capernaum.lng,POINTS.capernaum.lat,POINTS.capernaum.grade],
-  [POINTS.bethsaida.name,POINTS.bethsaida.lng,POINTS.bethsaida.lat,POINTS.bethsaida.grade],
-  [POINTS.caesareaPhilippi.name,POINTS.caesareaPhilippi.lng,POINTS.caesareaPhilippi.lat,POINTS.caesareaPhilippi.grade],
-  [POINTS.tyre.name,POINTS.tyre.lng,POINTS.tyre.lat,POINTS.tyre.grade],
-  [POINTS.gerasa.name,POINTS.gerasa.lng,POINTS.gerasa.lat,POINTS.gerasa.grade],
-  [POINTS.sychar.name,POINTS.sychar.lng,POINTS.sychar.lat,POINTS.sychar.grade],
-  [POINTS.temptation.name,POINTS.temptation.lng,POINTS.temptation.lat,POINTS.temptation.grade],
-];
-const JOHN_SITES = [
-  [POINTS.baptism.name,POINTS.baptism.lng,POINTS.baptism.lat,POINTS.baptism.grade],
-  [POINTS.aenon.name,POINTS.aenon.lng,POINTS.aenon.lat,POINTS.aenon.grade],
-  [POINTS.machaerus.name,POINTS.machaerus.lng,POINTS.machaerus.lat,POINTS.machaerus.grade],
-];
 
-const ROADS = [
-  { key:'jerichoRoad', name:'예루살렘–여리고 로마 도로 회랑', color:'#f0c67a', pts:PILGRIM,
-    note:'와디 켈트·아둠밈 오르막을 따르는 대표적 상경 회랑의 근사선' },
-  { key:'ridgeRoad', name:'중앙산지 능선길', color:'#f1e0a0', pts:[
-    [35.0998,31.5326],[35.2024,31.7054],[35.2354,31.7780],[35.2660,31.9380],[35.2856,32.2094],[35.2880,32.4700],[35.2978,32.7021]
-  ], note:'헤브론–베들레헴–예루살렘–사마리아–갈릴리 방향의 내륙 남북 축 근사선' },
-  { key:'jordanRoad', name:'요단 계곡 · 베레아 길', color:'#8fd3dc', pts:[
-    [35.5753,32.8809],[35.5750,32.6200],[35.5650,32.3800],[35.5550,32.1200],[35.5500,31.8370],[35.5000,31.8500],[35.4337,31.8537]
-  ], note:'갈릴리에서 요단 계곡을 따라 남하하여 세례지·여리고로 연결되는 회랑 근사선' },
-  { key:'viaMaris', name:'갈릴리–해안 회랑', color:'#d9a9d4', pts:[
-    [35.2038,33.2705],[35.0900,33.0800],[35.0900,32.8600],[35.2100,32.7700],[35.3397,32.7469],[35.5753,32.8809]
-  ], note:'두로 방면과 갈릴리 서쪽을 잇는 비아 마리스 계열 근사선' },
-];
+// ③ 최후 상경: 가버나움 → 요단 동편(베레아) → 여리고 → 예루살렘 (로마 도로 합류)
+
+/* 세례 요한: 유대 광야 → 세례터(요 1:28) → 아이논(요 3:23) / 마케루스 순교(요세푸스) */
+
+
+
+
+
 const roadLayerRegistry = {}, terrLayerRegistry = {}, terrMarkerRegistry = {};
 const terrMarkers = [], jesusMarkers = [], johnMarkers = [];
 

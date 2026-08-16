@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BibleAtlas · 실사 모드 프로토타입 (Cesium)</title>
+<link href="https://cdn.jsdelivr.net/npm/cesium@1.123/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+<link href="./styles.css" rel="stylesheet">
+<link href="./mobile.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --gold:#d9a353; --stone:#ede4d3; --stone-dim:#b3a68e; --ink:#171310;
+    --panel:#171310; --radius:12px; --danger:#c4694f; --below:#6fb3ba; }
+  *{ box-sizing:border-box }
+  html,body{ margin:0; height:100%; background:#0d0b08; color:var(--stone);
+    font-family:'Noto Sans KR',sans-serif; overflow:hidden }
+  #cesiumContainer{ position:absolute; inset:0 }
+  .cesium-widget-credits{ font-size:10px }
+
+  .panel{ position:absolute; background:#171310ee; border:1px solid #d9a35355;
+    border-radius:12px; box-shadow:0 6px 22px rgba(0,0,0,.5) }
+
+  #head{ top:14px; left:14px; z-index:10; max-width:360px; padding:14px 16px }
+  #head h1{ margin:0 0 6px; font-family:'Noto Serif KR',serif; font-size:1.05rem; color:var(--gold) }
+  #head .tag{ font-size:.62rem; letter-spacing:.12em; color:var(--stone-dim); text-transform:uppercase }
+  #head p{ margin:8px 0 0; font-size:.76rem; line-height:1.6; color:var(--stone-dim) }
+  #head b{ color:var(--stone) }
+
+  #ctl{ top:14px; right:14px; z-index:10; width:262px; padding:12px 14px }
+  #ctl h2{ margin:0 0 9px; font-size:.8rem; color:var(--gold); font-weight:700 }
+  .row{ display:flex; align-items:center; gap:8px; margin-bottom:9px; font-size:.74rem }
+  .row label{ flex:0 0 74px; color:var(--stone-dim) }
+  .row input[type=range]{ flex:1; accent-color:var(--gold) }
+  .row .val{ flex:0 0 62px; text-align:right; font-variant-numeric:tabular-nums; color:var(--stone) }
+  .btnRow{ display:flex; gap:6px; flex-wrap:wrap; margin-top:4px }
+  button{ background:#241d16; border:1px solid #d9a35355; color:var(--stone);
+    border-radius:8px; padding:6px 9px; font-family:inherit; font-size:.72rem; cursor:pointer }
+  button:hover{ border-color:var(--gold); color:var(--gold) }
+  button.on{ background:var(--gold); color:#241c0e; border-color:var(--gold) }
+  .chk{ display:flex; align-items:center; gap:6px; font-size:.73rem; color:var(--stone-dim); margin-bottom:6px }
+  .chk input{ accent-color:var(--gold) }
+
+  #sun{ position:absolute; left:14px; bottom:14px; z-index:10; padding:10px 13px; font-size:.73rem;
+    line-height:1.7; color:var(--stone-dim) }
+  #sun b{ color:var(--stone); font-variant-numeric:tabular-nums }
+
+  #err{ position:absolute; inset:0; z-index:60; display:none; align-items:center; justify-content:center;
+    background:#0d0b08f2; padding:30px; text-align:center }
+  #err.show{ display:flex }
+  #err div{ max-width:520px; font-size:.85rem; line-height:1.7 }
+
+  /* ── 고도 단면 패널 (MapLibre 판과 동일한 스타일) ── */
+  #profilePanel{position:absolute;left:14px;right:14px;bottom:14px;z-index:10;
+    background:color-mix(in srgb,var(--panel) 92%,transparent);
+    backdrop-filter:blur(10px);border:1px solid #40352277;
+    border-radius:var(--radius);padding:14px 18px 10px;
+    transform:translateY(calc(100% + 20px));transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+  #profilePanel.open{transform:translateY(0)}
+  #profileHead{display:flex;justify-content:space-between;align-items:baseline;
+    flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  #profileTitle{font-family:'Noto Serif KR',serif;font-weight:700;font-size:1rem;color:var(--gold)}
+  #profileStats{font-size:.76rem;color:var(--stone-dim);display:flex;gap:14px;flex-wrap:wrap}
+  #profileStats b{color:var(--stone);font-weight:700}
+  #secTools{margin-left:auto;display:flex;align-items:center;gap:5px}
+  #secZoomLabel{font-size:.7rem;color:var(--stone-dim);min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
+  .secBtn{background:#241d16;border:1px solid #d9a35355;color:var(--stone);border-radius:7px;
+    min-width:26px;height:26px;padding:0 7px;font-family:inherit;font-size:.78rem;cursor:pointer;line-height:1}
+  .secBtn:hover{border-color:var(--gold);color:var(--gold)}
+  .secBtn.wide{padding:0 10px;font-size:.72rem}
+  .secBtn.flying{background:var(--danger);color:#fff;border-color:var(--danger)}
+  #chart{cursor:crosshair}
+  #profileStats .neg{color:var(--below)}
+  #chartWrap{position:relative}
+  #chart{display:block;width:100%;height:200px;cursor:crosshair}
+  #readout{position:absolute;pointer-events:none;background:#171310ee;
+    border:1px solid var(--gold);border-radius:6px;padding:5px 9px;
+    font-size:.74rem;white-space:nowrap;display:none;transform:translate(-50%,-115%)}
+  #readout b{color:var(--gold)}
+  #closeProfile{background:none;border:none;color:var(--stone-dim);cursor:pointer;
+    font-size:1rem;padding:2px 6px;font-family:inherit}
+  #closeProfile:hover{color:var(--stone)}
+
+  /* ── 실사 모드 전용 패널 ── */
+  #realCtl{position:absolute;left:14px;bottom:250px;z-index:13;width:250px;padding:11px 13px;
+    background:#171310ee;border:1px solid #d9a35355;border-radius:12px;box-shadow:0 6px 22px rgba(0,0,0,.5)}
+  #realCtl h2{margin:0 0 8px;font-size:.78rem;color:var(--gold);font-weight:700}
+  #realCtl .row{display:flex;align-items:center;gap:7px;margin-bottom:8px;font-size:.72rem}
+  #realCtl .row label{flex:0 0 46px;color:var(--stone-dim)}
+  #realCtl .row input[type=range]{flex:1;accent-color:var(--gold)}
+  #realCtl .val{flex:0 0 48px;text-align:right;color:var(--stone);font-variant-numeric:tabular-nums}
+  #realCtl .btnRow{display:flex;gap:5px;flex-wrap:wrap}
+  #realCtl button{background:#241d16;border:1px solid #d9a35355;color:var(--stone);border-radius:7px;
+    padding:5px 8px;font-family:inherit;font-size:.7rem;cursor:pointer}
+  #realCtl button:hover{border-color:var(--gold);color:var(--gold)}
+  #realCtl button.on{background:var(--gold);color:#241c0e;border-color:var(--gold)}
+  #realCtl .chk{display:flex;align-items:center;gap:6px;font-size:.71rem;color:var(--stone-dim);margin-top:7px}
+  #realCtl .chk input{accent-color:var(--gold)}
+  #sunReadout{margin-top:9px;padding-top:8px;border-top:1px solid #3a3128;
+    font-size:.69rem;line-height:1.6;color:var(--stone-dim)}
+  #sunReadout b{color:var(--stone);font-variant-numeric:tabular-nums}
+  @media (max-width:1100px){ #realCtl{display:none} }
+</style>
+</head>
+<body>
+
+<div id="cesiumContainer"></div>
+<div id="map" style="display:none"></div>
+
+<div id="terrLegend" aria-label="분봉왕 행정구역 범례">
+  <div class="tlTitle">분봉왕 행정구역 <small>눅 3:1 · AD 26~36 빌라도 재임기</small></div>
+  <button id="tlFold" title="범례 접기/펼치기" aria-label="분봉왕 범례 접기">▲</button>
+  <div class="tlItems" id="tlItems"></div>
+  <label class="tlAll"><input type="checkbox" id="tlMaster" checked> 전체</label>
+</div>
+
+<header id="hdr">
+  <button id="hdrToggle" title="설명 패널 접기/펼치기" aria-label="설명 패널 접기">◀</button>
+  <h1><small>BIBLEATLAS · FIRST-CENTURY TERRAIN LAB</small>예수님 사역기의 땅 — 예루살렘과 요단</h1>
+  <p>예수님·세례 요한 사역기의 <b>지형·고고학 앵커</b>를 현대 DEM 위에 분리해 재구성합니다.
+  요단 저지대에서 유대 중앙산지로 올라가는 고도차, 1세기 도로 회랑, 성전산·헤롯 건축을
+  <b>같은 좌표·같은 고도 기준</b>으로 읽도록 정합성을 맞췄습니다.</p>
+  <p class="hint">A 고고학 앵커 · B 문헌+고고학 근사 · C 전승/위치 논쟁<br>
+  지형=현대 DEM(지표) · 고대 건축=별도 재구성 · 3D는 정오 조명·입체 강화 기본 ON</p>
+</header>
+
+<div id="routes" aria-label="빠른 실행">
+  <button class="chip" data-route="jj">해안→베레아 전체 단면</button>
+  <button class="chip" data-route="ew">동서 횡단 단면</button>
+  <button class="chip" data-route="rift">요단 지구대 단면</button>
+  <button class="chip draw" id="drawBtn">✏️ 직접 그리기</button>
+  <button class="chip" id="fitAll">🔭 전체 보기</button>
+  <button class="chip" id="templeView">🏛️ 헤롯 성전 보기</button>
+
+  <button class="chip tog on legacyCtl" id="togTerr">🗺️ 분봉 행정구역</button>
+  <button class="chip tog on legacyCtl" id="togJesus">✝️ 예수님 사역 여정</button>
+  <button class="chip tog on legacyCtl" id="togJohn">🕊️ 세례 요한 여정</button>
+  <button class="chip tog on legacyCtl" id="baseMode">🏺 고증 배경</button>
+  <button class="chip tog on legacyCtl" id="togBld">🏛️ 1세기 건축 재구성</button>
+  <button class="chip tog on legacyCtl on" id="togExag">⛰️ 지형 시각 보조</button>
+</div>
+
+<div id="treeDock">
+  <button id="treeToggleBtn" class="chip">☰ 레이어 트리</button>
+  <div id="treePanel" class="open" role="tree" aria-label="레이어 트리">
+    <details open>
+      <summary>배경 · 지형</summary>
+      <label><input type="checkbox" id="treeBaseMode" checked> 1세기 고증 배경</label>
+      <label><input type="checkbox" id="treeBld" checked> 1세기 건축 재구성</label>
+      <label><input type="checkbox" id="treeExag" checked> 지형 입체 강화 (해발 수치는 동일)</label>
+      <label><input type="checkbox" id="treePoints" checked> 고증 포인트 HUD 라벨</label>
+      <label><input type="checkbox" id="treeKeyPlaces" checked> 1세기 핵심 지명 (빨간 점)</label>
+      <label><input type="checkbox" id="treeOsm"> OSM 도로·지명 겹쳐 보기</label>
+      <div class="rangeRow"><span>OSM 진하기</span><input type="range" id="osmOpacity" min="10" max="100" value="55"></div>
+    </details>
+
+    <details open>
+      <summary>분봉왕 행정구역</summary>
+      <label><input type="checkbox" id="treeTerrMaster" checked> 전체 행정구역 보기</label>
+      <div class="treeSub">
+        <label><input type="checkbox" class="terr-item" data-key="judea" checked> 유대 · 사마리아 · 이두매</label>
+        <label><input type="checkbox" class="terr-item" data-key="galilee" checked> 갈릴리</label>
+        <label><input type="checkbox" class="terr-item" data-key="perea" checked> 베레아</label>
+        <label><input type="checkbox" class="terr-item" data-key="ituraea" checked> 이두래 · 드라고닛</label>
+        <label><input type="checkbox" class="terr-item" data-key="decapolis" checked> 데가볼리</label>
+        <div class="rangeRow"><span>불투명도</span><input type="range" id="terrOpacity" min="0" max="100" value="22"></div>
+      </div>
+    </details>
+
+    <details open>
+      <summary>1세기 육로</summary>
+      <label><input type="checkbox" id="treeRoadMaster" checked> 육로 전체 보기</label>
+      <div class="treeSub">
+        <label><input type="checkbox" class="road-item" data-key="jerichoRoad" checked> 예루살렘–여리고 오르막길</label>
+        <label><input type="checkbox" class="road-item" data-key="ridgeRoad" checked> 중앙산지 능선길</label>
+        <label><input type="checkbox" class="road-item" data-key="jordanRoad" checked> 요단 계곡 · 베레아 길</label>
+        <label><input type="checkbox" class="road-item" data-key="viaMaris" checked> 갈릴리–해안 회랑</label>
+      </div>
+    </details>
+
+    <details open>
+      <summary>예수님 사역</summary>
+      <label><input type="checkbox" id="treeJesusLines" checked> 사역 여정 선</label>
+      <label><input type="checkbox" id="treeJesusSites" checked> 사역 포인트</label>
+    </details>
+
+    <details open>
+      <summary>세례 요한 사역</summary>
+      <label><input type="checkbox" id="treeJohnLines" checked> 사역 여정 선</label>
+      <label><input type="checkbox" id="treeJohnSites" checked> 사역 포인트</label>
+    </details>
+  </div>
+</div>
+
+<div id="pointHud" aria-live="polite">
+  <button id="pointHudClose" aria-label="포인트 설명 닫기">✕</button>
+  <div id="pointHudBody"><b>포인트를 선택하세요</b><span>지도 위 HUD 라벨을 누르면 간략 설명이 여기 표시됩니다.</span></div>
+</div>
+
+<div id="accuracyLegend" aria-hidden="true">
+  <div><span class="grade a">A</span><b>고고학 앵커</b> · 유적/실측 위치가 비교적 확실</div>
+  <div><span class="grade b">B</span><b>문헌+고고학 근사</b> · 지점/회랑 단위</div>
+  <div><span class="grade c">C</span><b>전승·논쟁 위치</b> · 정확한 점이 아닌 참고</div>
+  <div style="margin-top:5px">해발은 동일 DEM을 양선형 보간해 지도·단면에 공통 사용. 성전산은 별도 고고학 기준값을 함께 표시.<br>
+  Google Elevation/Photorealistic 3D는 API 키가 필요한 검증 소스이므로 이 단독 HTML에는 키를 내장하지 않습니다.</div>
+</div>
+
+<div id="profilePanel" role="region" aria-label="고도 단면">
+  <div id="profileHead">
+    <span id="profileTitle">단면</span>
+    <span id="profileStats"></span>
+    <span id="secTools">
+      <button id="walkRoute" class="secBtn wide" title="이 경로를 지면 높이에서 따라 이동">🚶 길 따라 이동</button>
+      <button id="secOut" class="secBtn" title="단면 축소" aria-label="단면 축소">−</button>
+      <span id="secZoomLabel">1.0×</span>
+      <button id="secIn" class="secBtn" title="단면 확대" aria-label="단면 확대">＋</button>
+      <button id="secReset" class="secBtn" title="단면 전체 보기" aria-label="단면 전체 보기">⤢</button>
+    </span>
+    <button id="closeProfile" aria-label="단면 닫기">✕</button>
+  </div>
+  <div id="chartWrap">
+    <canvas id="chart"></canvas>
+    <div id="readout"></div>
+  </div>
+</div>
+
+<div id="viewCtl">
+  <button id="rotL" title="왼쪽으로 회전" aria-label="왼쪽으로 회전">⟲</button>
+  <button id="rotR" title="오른쪽으로 회전" aria-label="오른쪽으로 회전">⟳</button>
+  <button id="orbit" title="자동 360° 회전" aria-label="자동 회전">🔄</button>
+</div>
+
+<div id="hud" aria-live="polite">
+  <div class="verse">"내가 산을 향하여 눈을 들리라"<small>성전에 올라가는 노래 · 시편 121:1</small></div>
+  <div class="meters">
+    <span>해발 <b id="hudElev">—</b></span>
+    <span class="climb">상승 <b id="hudClimb">—</b></span>
+    <span>출발점에서 <b id="hudDist">—</b></span>
+  </div>
+  <br><button class="skip" id="skipFlight">비행 건너뛰기</button>
+</div>
+
+<div id="toast"></div>
+
+<div id="errBox" role="alert">
+  <div class="card">
+    <h2>지도를 시작할 수 없습니다</h2>
+    <p id="errMsg"></p>
+    <code id="errDetail"></code>
+  </div>
+</div>
+
+
+<!-- 실사 모드 전용: 시각·시점·그림자 -->
+<div class="panel" id="realCtl">
+  <h2>실사 모드</h2>
+  <div class="row">
+    <label>유대력</label>
+    <input type="range" id="hour" min="1" max="12" step="0.25" value="6">
+    <span class="val" id="hourVal">제6시</span>
+  </div>
+  <div class="btnRow">
+    <button data-h="3">제3시</button><button data-h="6" class="on">제6시</button>
+    <button data-h="9">제9시</button><button data-h="11">제11시</button>
+  </div>
+  <div class="btnRow" style="margin-top:8px">
+    <button id="viewTemple">성전→감람산</button><button id="viewOlivet">감람산→성전</button>
+  </div>
+  <label class="chk"><input type="checkbox" id="chkShadow" checked> 지형·건축 그림자</label>
+  <label class="chk"><input type="checkbox" id="chkAtmo" checked> 대기 산란</label>
+  <div id="sunReadout">태양 고도 <b id="sunAlt">—</b> · 방위 <b id="sunAz">—</b><br>
+    카메라 피치 <b id="camPitch">—</b> · 고도 <b id="camHeight">—</b></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/cesium@1.123/Build/Cesium/Cesium.js"></script>
+<!-- 공용 데이터·차트 + Cesium 전용 렌더러/UI (MapLibre 전용 모듈은 싣지 않는다) -->
+<script src="./scripts/data/00-geo.js"></script>
+<script src="./scripts/data/10-elevation.js"></script>
+<script src="./scripts/data/20-buildings.js"></script>
+<script src="./scripts/20-profile.js"></script>
+<script src="./scripts/cesium/10-layers.js"></script>
+<script src="./scripts/cesium/20-section.js"></script>
+<script src="./scripts/cesium/30-buildings-walk.js"></script>
+<script src="./scripts/cesium/40-ui.js"></script>
+<!-- MapLibre 판과 같은 지리 데이터를 그대로 쓴다 (좌표를 고치면 두 화면에 함께 반영) -->
+<script>
+/* ══════════════════════════════════════════════════════════════════════════
+   BibleAtlas 실사 모드 프로토타입
+
+   목적: MapLibre 판의 구조적 한계(피치 85°, 시야각 60°, 카메라 지형 관통,
+   그림자 없음)가 Cesium 에서 어떻게 해소되는지 눈으로 비교하기 위한 것.
+
+   외부 키가 필요 없다:
+     · 지형  ArcGIS WorldElevation3D/Terrain3D  (LOD 16, 키 불필요)
+     · 영상  Esri World Imagery MapServer       (키 불필요)
+     · 태양  Cesium 이 시계(clock)에서 물리적으로 계산 — 별도 계산 코드 불필요
+   ══════════════════════════════════════════════════════════════════════════ */
+'use strict';
+
+const JERUSALEM = { lng: 35.2345, lat: 31.7767 };
+const TEMPLE    = { lng: 35.2354, lat: 31.7780 };
+const OLIVET    = { lng: 35.2458, lat: 31.7784 };
+/* 기준일: 니산 무렵(춘분 직후). 유대력 '제N시'는 시계 시각이 아니라
+   일출~일몰을 12등분한 낮 시간이므로, 일출 시각에서 역산한다. */
+const BASE_DAY = '2026-04-02';
+
+function fatal(msg){
+  const e = document.getElementById('err');
+  e.querySelector('div').innerHTML = msg;
+  e.classList.add('show');
+}
+if (typeof Cesium === 'undefined'){
+  fatal('Cesium 라이브러리를 불러오지 못했습니다.<br>인터넷 연결을 확인해 주세요.');
+  throw new Error('Cesium not loaded');
+}
+// ion 자산을 쓰지 않으므로 기본 토큰 요청이 나가지 않도록 비운다
+Cesium.Ion.defaultAccessToken = undefined;
+
+let viewer, layerCounts = {};
+
+(async function init(){
+  try{
+    viewer = new Cesium.Viewer('cesiumContainer', {
+      // 키 없는 Esri 위성 영상
+      baseLayer: Cesium.ImageryLayer.fromProviderAsync(
+        Cesium.ArcGisMapServerImageryProvider.fromUrl(
+          'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
+          { enablePickFeatures: false })),
+      baseLayerPicker: false, geocoder: false, homeButton: false,
+      sceneModePicker: false, navigationHelpButton: false, infoBox: false,
+      selectionIndicator: false, timeline: false, animation: false,
+      fullscreenButton: false,
+      shadows: true,
+      terrainShadows: Cesium.ShadowMode.ENABLED,
+    });
+
+    // 키 없는 고해상도 지형 (LOD 16)
+    viewer.terrainProvider = await Cesium.ArcGISTiledElevationTerrainProvider.fromUrl(
+      'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer');
+
+    const scene = viewer.scene;
+    scene.globe.enableLighting = true;        // 태양 위치에 따른 지형 명암
+    scene.globe.depthTestAgainstTerrain = true;
+    scene.skyAtmosphere.show = true;
+    scene.fog.enabled = true;
+    scene.globe.showGroundAtmosphere = true;
+    scene.shadowMap.softShadows = true;
+    scene.shadowMap.size = 2048;
+    scene.shadowMap.maximumDistance = 12000;
+    viewer.clock.shouldAnimate = false;
+
+    // 공통 데이터 레이어 (고증 포인트·핵심 지명·행정구역·여정·도로)
+    layerCounts = BibleAtlasLayers.init(viewer);
+    layerCounts.buildings = BibleAtlasBuildings.add(viewer);
+    console.log('Cesium 레이어:', layerCounts);
+    setJewishHour(6);
+    flyTempleToOlivet();
+
+    setupMapLibreStyleControls();
+    window.dispatchEvent(new Event('bibleatlas-cesium-ready'));
+
+    /* 그림자맵은 카메라 주변 일정 거리까지만 계산한다. 넓게 조망하면 그 경계가
+       어두운 띠로 보이므로, 카메라 고도에 따라 사거리를 늘리고 아주 높은
+       고도에서는 지형 그림자를 끈다(그 축척에서는 어차피 보이지 않는다). */
+    scene.camera.changed.addEventListener(adaptShadows);
+    scene.camera.percentageChanged = 0.2;
+    adaptShadows();
+
+    scene.postRender.addEventListener(updateReadout);
+  }catch(err){
+    fatal('초기화 실패: ' + (err && err.message ? err.message : err));
+    console.error(err);
+  }
+})();
+
+/* ── 유대력 시각 → 실제 시각 ────────────────────────────────
+   Cesium 이 태양 위치를 시계에서 계산하므로, 우리는 '언제인가'만 정하면 된다.
+   일출/일몰은 태양 적위와 위도로 구한 반일주호로 계산한다. */
+function jewishHourToDate(hour){
+  const d = new Date(BASE_DAY + 'T12:00:00Z');
+  const N = Math.floor((d - new Date(d.getUTCFullYear(), 0, 0)) / 86400000);
+  const decl = 23.44 * Math.sin((360 / 365.25) * (N - 81) * Math.PI / 180);   // 근사 적위
+  const latR = JERUSALEM.lat * Math.PI / 180, declR = decl * Math.PI / 180;
+  const cosH = -Math.tan(latR) * Math.tan(declR);
+  const halfDayHours = Math.acos(Math.min(1, Math.max(-1, cosH))) * 180 / Math.PI / 15;
+  const solarNoonUTC = 12 - JERUSALEM.lng / 15;               // 진태양시 정오(UTC)
+  const sunriseUTC = solarNoonUTC - halfDayHours;
+  const dayHour = (halfDayHours * 2) / 12;                     // 낮 1시간 길이
+  const utcHours = sunriseUTC + (hour - 0.5) * dayHour;
+  const base = new Date(BASE_DAY + 'T00:00:00Z');
+  return new Date(base.getTime() + utcHours * 3600000);
+}
+
+function setJewishHour(hour){
+  const when = jewishHourToDate(hour);
+  viewer.clock.currentTime = Cesium.JulianDate.fromDate(when);
+  viewer.scene.requestRender();
+  document.getElementById('hourVal').textContent =
+    '제' + (Number.isInteger(hour) ? hour : hour.toFixed(2)) + '시';
+}
+
+/* ── 태양 고도·방위 읽기 (표시용) ─────────────────────────── */
+function sunAltAz(){
+  const t = viewer.clock.currentTime;
+  const sunPos = Cesium.Simon1994PlanetaryPositions.computeSunPositionInEarthInertialFrame(t);
+  const icrfToFixed = Cesium.Transforms.computeTemeToPseudoFixedMatrix(t);
+  if (!icrfToFixed) return null;
+  const sunFixed = Cesium.Matrix3.multiplyByVector(icrfToFixed, sunPos, new Cesium.Cartesian3());
+  const origin = Cesium.Cartesian3.fromDegrees(JERUSALEM.lng, JERUSALEM.lat, 800);
+  const enu = Cesium.Transforms.eastNorthUpToFixedFrame(origin);
+  const inv = Cesium.Matrix4.inverse(enu, new Cesium.Matrix4());
+  const local = Cesium.Matrix4.multiplyByPoint(inv, sunFixed, new Cesium.Cartesian3());
+  const n = Cesium.Cartesian3.normalize(local, new Cesium.Cartesian3());
+  const alt = Math.asin(n.z) * 180 / Math.PI;
+  let az = Math.atan2(n.x, n.y) * 180 / Math.PI;
+  if (az < 0) az += 360;
+  return { alt, az };
+}
+
+/* ══════════════ 조작 방식: 기존 MapLibre 판과 동일하게 ══════════════
+   Cesium 기본값은 좌드래그=지구 회전, 우드래그=줌, 휠=줌이라 익숙한 조작과 다르다.
+   기존 지도와 같은 감각으로 맞춘다:
+     · 좌드래그            지도 이동(팬)
+     · 우드래그            좌우 회전(bearing) + 상하 기울기(pitch)
+     · 트랙패드 두 손가락  좌우 회전 + 상하 기울기
+     · 핀치 / Shift+휠     확대·축소
+   트랙패드 두 손가락 드래그는 브라우저에서 ctrlKey 없는 wheel 이벤트로 오고,
+   핀치는 ctrlKey 가 붙은 wheel 로 온다. 이 차이로 둘을 구분한다. */
+const ORBIT = { headingPerPx: 0.25, pitchPerPx: 0.18, minPitch: -89, maxPitch: -1 };
+
+function pickCenterPosition(){
+  const scene = viewer.scene;
+  const canvas = scene.canvas;
+  const center = new Cesium.Cartesian2(canvas.clientWidth / 2, canvas.clientHeight / 2);
+  // 화면 중앙의 지형 좌표 — 없으면 타원체 교점으로 대체
+  return scene.globe.pick(viewer.camera.getPickRay(center), scene)
+      || viewer.camera.pickEllipsoid(center, scene.globe.ellipsoid);
+}
+
+/** 화면 중앙을 축으로 좌우 회전·상하 기울기 (기존 지도의 우드래그와 같은 감각) */
+function orbitAroundCenter(dHeadingDeg, dPitchDeg){
+  const cam = viewer.camera;
+  const center = pickCenterPosition();
+  if (!center) return;
+  const currentPitch = Cesium.Math.toDegrees(cam.pitch);
+  // 지면 아래로 넘어가거나 수직으로 뒤집히지 않도록 제한
+  let dp = dPitchDeg;
+  if (currentPitch + dp < ORBIT.minPitch) dp = ORBIT.minPitch - currentPitch;
+  if (currentPitch + dp > ORBIT.maxPitch) dp = ORBIT.maxPitch - currentPitch;
+
+  const frame = Cesium.Transforms.eastNorthUpToFixedFrame(center);
+  cam.lookAtTransform(frame);
+  cam.rotateLeft(Cesium.Math.toRadians(dHeadingDeg));
+  if (dp) cam.rotateUp(Cesium.Math.toRadians(dp));
+  cam.lookAtTransform(Cesium.Matrix4.IDENTITY);
+  viewer.scene.requestRender();
+}
+
+function setupMapLibreStyleControls(){
+  const scene = viewer.scene;
+  const ctl = scene.screenSpaceCameraController;
+  const T = Cesium.CameraEventType;
+
+  // 좌드래그 = 지도 이동, 휠·핀치 = 줌, 우드래그는 Cesium 기본 동작에서 떼어낸다
+  ctl.rotateEventTypes = [T.LEFT_DRAG];
+  ctl.translateEventTypes = [T.LEFT_DRAG];
+  ctl.zoomEventTypes = [T.PINCH, T.MIDDLE_DRAG];
+  ctl.tiltEventTypes = [];
+  ctl.lookEventTypes = [];
+
+  /* 우드래그 = 좌우 회전 + 상하 기울기 */
+  const handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
+  let dragging = false, last = null;
+  handler.setInputAction((e) => { dragging = true; last = e.position.clone(); },
+    Cesium.ScreenSpaceEventType.RIGHT_DOWN);
+  handler.setInputAction((e) => {
+    if (!dragging || !last) return;
+    const dx = e.endPosition.x - last.x;
+    const dy = e.endPosition.y - last.y;
+    last = e.endPosition.clone();
+    orbitAroundCenter(-dx * ORBIT.headingPerPx, dy * ORBIT.pitchPerPx);
+  }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+  handler.setInputAction(() => { dragging = false; last = null; },
+    Cesium.ScreenSpaceEventType.RIGHT_UP);
+  scene.canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+  /* 트랙패드 두 손가락 = 좌우 회전 + 상하 기울기 / 핀치·Shift+휠 = 줌 */
+  scene.canvas.addEventListener('wheel', (e) => {
+    if (e.ctrlKey || e.shiftKey) return;     // 핀치·Shift+휠은 Cesium 기본 줌으로 넘긴다
+    e.preventDefault();
+    e.stopPropagation();
+    orbitAroundCenter(-e.deltaX * 0.22, -e.deltaY * 0.16);
+  }, { passive: false, capture: true });
+
+  // 핀치(ctrl+wheel)·Shift+휠을 줌으로 처리
+  scene.canvas.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey && !e.shiftKey) return;
+    e.preventDefault();
+    const cam = viewer.camera;
+    const carto = Cesium.Cartographic.fromCartesian(cam.positionWC);
+    const height = carto ? carto.height : 3000;
+    // 고도에 비례한 배율 — 높은 곳에서는 성큼, 지면 근처에서는 촘촘하게
+    const step = Math.max(12, height * 0.22);
+    cam.moveBackward(e.deltaY > 0 ? step : -step);
+    viewer.scene.requestRender();
+  }, { passive: false, capture: true });
+}
+
+/* 카메라 고도에 맞춰 그림자 사거리를 조절한다 */
+function adaptShadows(){
+  if (!viewer) return;
+  const carto = Cesium.Cartographic.fromCartesian(viewer.camera.positionWC);
+  const h = carto ? carto.height : 1000;
+  const wantTerrain = h < 15000 && document.getElementById('chkShadow').checked;
+  viewer.terrainShadows = wantTerrain ? Cesium.ShadowMode.ENABLED : Cesium.ShadowMode.DISABLED;
+  // 사거리를 카메라 고도의 6배로 — 경계가 화면 밖에 놓이게 한다
+  viewer.scene.shadowMap.maximumDistance = Math.min(200000, Math.max(6000, h * 6));
+}
+
+function updateReadout(){
+  const s = sunAltAz();
+  if (s){
+    document.getElementById('sunAlt').textContent = s.alt.toFixed(1) + '°';
+    document.getElementById('sunAz').textContent = s.az.toFixed(1) + '°';
+  }
+  const cam = viewer.camera;
+  document.getElementById('camPitch').textContent = (90 + Cesium.Math.toDegrees(cam.pitch)).toFixed(0) + '°';
+  const carto = Cesium.Cartographic.fromCartesian(cam.positionWC);
+  document.getElementById('camHeight').textContent = carto ? Math.round(carto.height) + ' m' : '—';
+}
+
+/* ── 시점 프리셋 ────────────────────────────────────────────
+   Cesium 은 피치 제한이 없어 지면에서 하늘을 올려다보는 각도가 가능하다.
+   MapLibre 는 85°가 하드 리밋이라 수평선 위를 볼 수 없었다. */
+function lookFromTo(from, to, eyeAboveGround, pitchDeg){
+  const dest = Cesium.Cartesian3.fromDegrees(from.lng, from.lat,
+    (viewer.scene.globe.getHeight(Cesium.Cartographic.fromDegrees(from.lng, from.lat)) || 700) + eyeAboveGround);
+  const dLng = to.lng - from.lng, dLat = to.lat - from.lat;
+  const heading = Math.atan2(dLng * Math.cos(from.lat * Math.PI / 180), dLat);
+  viewer.camera.flyTo({
+    destination: dest,
+    orientation: { heading, pitch: Cesium.Math.toRadians(pitchDeg), roll: 0 },
+    duration: 2.0,
+  });
+}
+function flyTempleToOlivet(){ lookFromTo(TEMPLE, OLIVET, 25, -3); }   // 거의 수평 — 하늘이 보인다
+function flyOlivetToTemple(){ lookFromTo(OLIVET, TEMPLE, 25, -6); }
+function flyWide(){
+  viewer.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(35.35, 31.55, 42000),
+    orientation: { heading: Cesium.Math.toRadians(10), pitch: Cesium.Math.toRadians(-32), roll: 0 },
+    duration: 2.0,
+  });
+}
+
+/* ── UI ─────────────────────────────────────────────────── */
+(document.getElementById('hour')||{addEventListener(){}}).addEventListener('input', e => {
+  setJewishHour(Number(e.target.value));
+  document.querySelectorAll('.btnRow [data-h]').forEach(b => b.classList.remove('on'));
+});
+document.querySelectorAll('[data-h]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const h = Number(btn.dataset.h);
+    document.getElementById('hour').value = h;
+    setJewishHour(h);
+    document.querySelectorAll('[data-h]').forEach(b => b.classList.toggle('on', b === btn));
+  });
+});
+(document.getElementById('viewTemple')||{addEventListener(){}}).addEventListener('click', flyTempleToOlivet);
+(document.getElementById('viewOlivet')||{addEventListener(){}}).addEventListener('click', flyOlivetToTemple);
+(document.getElementById('chkShadow')||{addEventListener(){}}).addEventListener('change', e => {
+  viewer.shadows = e.target.checked;
+  adaptShadows();
+});
+
+
+/* 길 따라 이동 — 현재 단면 경로를 지면 높이에서 따라간다 */
+(document.getElementById('walkRoute')||{addEventListener(){}}).addEventListener('click', () => {
+  const btn = document.getElementById('walkRoute');
+  if (BibleAtlasWalk.running){ BibleAtlasWalk.stop(); return; }
+  if (!currentProfile){ showToast('먼저 단면 경로를 선택해 주세요', 2500); return; }
+  BibleAtlasWalk.start(viewer, currentProfile, (on) => {
+    btn.classList.toggle('flying', on);
+    btn.textContent = on ? '⏹ 이동 중지' : '🚶 길 따라 이동';
+  });
+});
+
+(document.getElementById('chkAtmo')||{addEventListener(){}}).addEventListener('change', e => {
+  viewer.scene.skyAtmosphere.show = e.target.checked;
+  viewer.scene.globe.showGroundAtmosphere = e.target.checked;
+  viewer.scene.fog.enabled = e.target.checked;
+});
+
+// 디버깅·검증용 훅
+window.BibleAtlasCesium = { get viewer(){ return viewer; }, setJewishHour, sunAltAz,
+  flyTempleToOlivet, flyOlivetToTemple, flyWide };
+</script>
+</body>
+</html>

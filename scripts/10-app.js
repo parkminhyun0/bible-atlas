@@ -1,60 +1,11 @@
 /* ══════════════ 기본 상수 ══════════════ */
 const JERUSALEM = [35.2345, 31.7767];
-const DEM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png';
-const SAMPLE_N = 240;        // 단면 샘플 수
-const SAMPLE_Z = 14;         // 고도 샘플링용 타일 줌
 
-const POINTS = {
-  temple: { n:'예루살렘 · 성전산', name:'예루살렘 · 성전산', lng:35.2354, lat:31.7780, grade:'A',
-    refElev:743.7, refText:'돔 바위 기반암 743.7 m (고고학 조사값)', note:'성전산 표면은 지점별로 다르며, 743.7m는 돔 바위 기반암 기준점입니다.' },
-  olivet: { n:'감람산', name:'감람산 정상부', lng:35.2458, lat:31.7784, grade:'A', note:'정상부 좌표. 실제 능선은 넓은 영역입니다.' },
-  bethphage: { n:'벳바게', name:'벳바게 (막 11:1)', lng:35.2508, lat:31.7787, grade:'C', note:'전승·지명 비정에 따른 근사점입니다.' },
-  bethany: { n:'베다니', name:'베다니 · 엘아자리야 (요 11장)', lng:35.2586, lat:31.7714, grade:'B', note:'고대 베다니 마을 범위의 대표점입니다.' },
-  samaritan: { n:'아둠밈', name:'아둠밈 오르막 · 선한 사마리아인 전승지', lng:35.3283, lat:31.8167, grade:'C', note:'눅 10장의 정확한 여관 위치가 아니라 예루살렘–여리고 고대 도로 회랑의 전승지입니다.' },
-  jerichoHerod: { n:'신약 여리고', name:'신약 여리고 · 헤롯 겨울궁전', lng:35.4337, lat:31.8537, grade:'A', note:'툴룰 아부 엘-알라이크의 헤롯 궁전군을 대표합니다.' },
-  jerichoTell: { n:'텔 에스-술탄', name:'구약 여리고 · 텔 에스-술탄', lng:35.4442, lat:31.8703, grade:'A', note:'신약기 도시 중심과 구별해 표시합니다.' },
-  baptism: { n:'요단 세례지', name:'요단 건너편 베다니 · 알마그타스 권역 (요 1:28)', lng:35.5500, lat:31.8370, grade:'B', note:'UNESCO 알마그타스 고고학 권역과 요단강 세례 전승을 대표하는 회랑점입니다. 정확한 신약 지점은 논의가 남아 있습니다.' },
-  bethlehem: { n:'베들레헴', name:'베들레헴', lng:35.2024, lat:31.7054, grade:'A' },
-  nazareth: { n:'나사렛', name:'나사렛', lng:35.2978, lat:32.7021, grade:'A' },
-  cana: { n:'가나', name:'가나 (요 2) · 비정 논쟁', lng:35.3397, lat:32.7469, grade:'C', note:'가나의 정확한 비정은 논쟁적이므로 대표 후보 지점으로만 표시합니다.' },
-  capernaum: { n:'가버나움', name:'가버나움 · 사역 본거지', lng:35.5753, lat:32.8809, grade:'A' },
-  bethsaida: { n:'벳새다', name:'벳새다 · 비정 논쟁', lng:35.6308, lat:32.9097, grade:'C', note:'주요 후보지 사이에 논쟁이 있어 대표점으로만 표시합니다.' },
-  caesareaPhilippi: { n:'가이사랴 빌립보', name:'가이사랴 빌립보 (막 8:27)', lng:35.6944, lat:33.2486, grade:'A' },
-  tyre: { n:'두로', name:'두로 지방 (막 7:24)', lng:35.2038, lat:33.2705, grade:'B' },
-  gerasa: { n:'거라사 권역', name:'거라사인/가다라 지방 (막 5) · 위치 논쟁', lng:35.6858, lat:32.6533, grade:'C' },
-  sychar: { n:'수가', name:'수가 · 야곱의 우물 권역 (요 4)', lng:35.2856, lat:32.2094, grade:'B' },
-  temptation: { n:'시험산', name:'시험산 전승지 (마 4)', lng:35.4280, lat:31.8740, grade:'C' },
-  aenon: { n:'아이논', name:'아이논 (요 3:23) · 위치 논쟁', lng:35.4700, lat:32.3500, grade:'C' },
-  machaerus: { n:'마케루스', name:'마케루스 · 요한 투옥·순교 전승/요세푸스', lng:35.62417, lat:31.56722, grade:'A' },
-  golgotha: { n:'골고다', name:'골고다 전승지 · 성묘교회', lng:35.22955, lat:31.77847, grade:'B', note:'1세기 성벽 밖 채석장·매장지 맥락과 전승을 함께 반영한 지점입니다.' },
-  herodPalace: { n:'헤롯 궁전', name:'헤롯 서부 궁전 · 총독 관저 유력지', lng:35.2272, lat:31.7745, grade:'B', note:'빌라도 재판 장소는 학계 논의가 있어 유력지로 표기합니다.' },
-  bethesda: { n:'베데스다', name:'베데스다 못 (요 5)', lng:35.23620, lat:31.78155, grade:'A' },
-  siloam: { n:'실로암', name:'실로암 못 (요 9)', lng:35.23465, lat:31.77040, grade:'A' },
-};
 
-const MARKS_MAIN = [POINTS.temple, POINTS.olivet, POINTS.bethphage, POINTS.bethany,
-  POINTS.samaritan, POINTS.jerichoHerod, POINTS.baptism];
 
-const ROUTES = {
-  jj:   { name:'지중해 해안 → 예루살렘 → 요단강 → 베레아 고원 (전체 단면)',
-          marks:[{n:'지중해 해안',lng:34.72,lat:31.79,grade:'B'},
-                 {n:'쉐펠라',lng:34.98,lat:31.785,grade:'B'},
-                 ...MARKS_MAIN,
-                 {n:'베레아 고원',lng:35.79,lat:31.925,grade:'B'}],
-          pts:[[34.72,31.79],[34.90,31.785],[35.05,31.782],[35.15,31.780],
-               [35.2354,31.7780],[35.2447,31.7777],[35.2508,31.7787],[35.2586,31.7714],
-               [35.2760,31.7900],[35.3010,31.8060],[35.3283,31.8167],[35.3760,31.8330],
-               [35.4080,31.8440],[35.4337,31.8537],[35.4900,31.8480],[35.5500,31.8370],
-               [35.6300,31.8600],[35.7100,31.8950],[35.7900,31.9250]] },
-  ew:   { name:'지중해 → 암몬 고원',
-          marks:[{n:'지중해',lng:34.70,lat:31.79,grade:'B'},POINTS.temple,
-                 {n:'요단 계곡',lng:35.47,lat:31.80},{n:'암몬 고원',lng:35.95,lat:31.85}],
-          pts:[[34.70,31.79],[35.2354,31.7780],[35.95,31.85]] },
-  rift: { name:'갈릴리 호수 → 사해',
-          marks:[{n:'갈릴리 호수',lng:35.585,lat:32.83},{n:'벧산',lng:35.556,lat:32.50},
-                 {n:'사해',lng:35.47,lat:31.45}],
-          pts:[[35.585,32.83],[35.556,32.20],[35.47,31.45]] },
-};
+
+
+
 
 /* ══════════════ 지도 초기화 ══════════════ */
 const map = new maplibregl.Map({
@@ -268,85 +219,14 @@ map.on('load', () => {
 function emptyFC(){ return { type:'FeatureCollection', features:[] }; }
 
 /* ══════════════ 고도 샘플링 (Terrarium 타일 직접 디코드) ══════════════ */
-const tileCache = new Map();
-function lngLatToTilePx(lng, lat, z){
-  const n = 2 ** z;
-  const x = (lng + 180) / 360 * n;
-  const latR = lat * Math.PI / 180;
-  const y = (1 - Math.log(Math.tan(latR) + 1/Math.cos(latR)) / Math.PI) / 2 * n;
-  return { tx:Math.floor(x), ty:Math.floor(y),
-           px:(x - Math.floor(x)) * 256, py:(y - Math.floor(y)) * 256 };
-}
-async function getTileData(z, tx, ty){
-  const key = `${z}/${tx}/${ty}`;
-  if (tileCache.has(key)) return tileCache.get(key);
-  const p = (async () => {
-    const url = DEM_URL.replace('{z}',z).replace('{x}',tx).replace('{y}',ty);
-    const img = await new Promise((res, rej) => {
-      const im = new Image();
-      im.crossOrigin = 'anonymous';
-      im.onload = () => res(im);
-      im.onerror = () => rej(new Error('DEM 타일 로드 실패'));
-      im.src = url;
-    });
-    const cv = document.createElement('canvas');
-    cv.width = cv.height = 256;
-    const cx = cv.getContext('2d', { willReadFrequently:true });
-    cx.drawImage(img, 0, 0);
-    return cx.getImageData(0, 0, 256, 256).data;
-  })();
-  tileCache.set(key, p);
-  return p;
-}
-function terrariumDecode(data, px, py){
-  const i = (py * 256 + px) * 4;
-  return (data[i] * 256 + data[i+1] + data[i+2] / 256) - 32768;
-}
-async function terrainPixel(z, tx, ty, px, py){
-  while (px < 0){ tx--; px += 256; }
-  while (px > 255){ tx++; px -= 256; }
-  while (py < 0){ ty--; py += 256; }
-  while (py > 255){ ty++; py -= 256; }
-  const data = await getTileData(z, tx, ty);
-  return terrariumDecode(data, px, py);
-}
-async function elevationAt(lng, lat){
-  const { tx, ty, px, py } = lngLatToTilePx(lng, lat, SAMPLE_Z);
-  const x0 = Math.floor(px), y0 = Math.floor(py), fx = px - x0, fy = py - y0;
-  const [e00,e10,e01,e11] = await Promise.all([
-    terrainPixel(SAMPLE_Z,tx,ty,x0,y0), terrainPixel(SAMPLE_Z,tx,ty,x0+1,y0),
-    terrainPixel(SAMPLE_Z,tx,ty,x0,y0+1), terrainPixel(SAMPLE_Z,tx,ty,x0+1,y0+1)
-  ]);
-  const top = e00*(1-fx) + e10*fx, bot = e01*(1-fx) + e11*fx;
-  return top*(1-fy) + bot*fy;
-}
+
+
+
+
 
 /* ══════════════ 거리·보간 유틸 ══════════════ */
-function haversine(a, b){
-  const R = 6371000, d = Math.PI/180;
-  const dLat = (b[1]-a[1])*d, dLng = (b[0]-a[0])*d;
-  const s = Math.sin(dLat/2)**2 +
-    Math.cos(a[1]*d)*Math.cos(b[1]*d)*Math.sin(dLng/2)**2;
-  return 2*R*Math.asin(Math.sqrt(s));
-}
-function samplePath(pts, n){
-  const segLen = [], cum = [0];
-  for (let i=0;i<pts.length-1;i++){ segLen.push(haversine(pts[i],pts[i+1])); cum.push(cum[i]+segLen[i]); }
-  const total = cum[cum.length-1];
-  const out = [];
-  for (let k=0;k<n;k++){
-    const target = total * k / (n-1);
-    let s = 0;
-    while (s < segLen.length-1 && cum[s+1] < target) s++;
-    const t = segLen[s] === 0 ? 0 : (target - cum[s]) / segLen[s];
-    out.push({
-      lng: pts[s][0] + (pts[s+1][0]-pts[s][0])*t,
-      lat: pts[s][1] + (pts[s+1][1]-pts[s][1])*t,
-      dist: target
-    });
-  }
-  return { samples:out, total };
-}
+
+
 
 /* ══════════════ 단면 계산 & 표시 ══════════════ */
 let currentProfile = null;
@@ -394,3 +274,13 @@ function fitToLine(pts){
   pts.forEach(p => b.extend(p));
   map.fitBounds(b, { padding:{top:90,bottom:230,left:60,right:60}, pitch:58, duration:1400 });
 }
+
+/* 단면 차트가 호출하는 엔진별 훅 — MapLibre 구현 */
+window.BibleAtlasHooks = {
+  hoverPoint(lng, lat){
+    const src = map.getSource && map.getSource('hoverPt');
+    if (!src) return;
+    src.setData(lng == null ? emptyFC()
+      : { type:'Feature', geometry:{ type:'Point', coordinates:[lng, lat] } });
+  },
+};

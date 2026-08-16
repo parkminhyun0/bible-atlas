@@ -191,11 +191,10 @@ chart.addEventListener('pointermove', ev => {
   readout.style.left = X(i) + 'px';
   readout.style.top = Y(e) + 'px';
   readout.innerHTML = `<b>${Math.round(e)} m</b> · ${(s.dist/1000).toFixed(1)} km 지점`;
-  map.getSource('hoverPt')?.setData({ type:'Feature',
-    geometry:{ type:'Point', coordinates:[s.lng, s.lat] } });
+  BibleAtlasHooks.hoverPoint(s.lng, s.lat);   // 엔진별 구현(MapLibre: 소스 갱신 / Cesium: 엔티티 이동)
 });
 chart.addEventListener('pointerleave', () => {
   readout.style.display = 'none';
-  map.getSource('hoverPt')?.setData(emptyFC());
+  BibleAtlasHooks.hoverPoint(null);
 });
 window.addEventListener('resize', () => drawProfile());
