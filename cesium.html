@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BibleAtlas · 실사 모드 프로토타입 (Cesium)</title>
+<link href="https://cdn.jsdelivr.net/npm/cesium@1.123/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --gold:#d9a353; --stone:#ede4d3; --stone-dim:#b3a68e; --ink:#171310; }
+  *{ box-sizing:border-box }
+  html,body{ margin:0; height:100%; background:#0d0b08; color:var(--stone);
+    font-family:'Noto Sans KR',sans-serif; overflow:hidden }
+  #cesiumContainer{ position:absolute; inset:0 }
+  .cesium-widget-credits{ font-size:10px }
+
+  .panel{ position:absolute; background:#171310ee; border:1px solid #d9a35355;
+    border-radius:12px; box-shadow:0 6px 22px rgba(0,0,0,.5) }
+
+  #head{ top:14px; left:14px; z-index:10; max-width:360px; padding:14px 16px }
+  #head h1{ margin:0 0 6px; font-family:'Noto Serif KR',serif; font-size:1.05rem; color:var(--gold) }
+  #head .tag{ font-size:.62rem; letter-spacing:.12em; color:var(--stone-dim); text-transform:uppercase }
+  #head p{ margin:8px 0 0; font-size:.76rem; line-height:1.6; color:var(--stone-dim) }
+  #head b{ color:var(--stone) }
+
+  #ctl{ top:14px; right:14px; z-index:10; width:262px; padding:12px 14px }
+  #ctl h2{ margin:0 0 9px; font-size:.8rem; color:var(--gold); font-weight:700 }
+  .row{ display:flex; align-items:center; gap:8px; margin-bottom:9px; font-size:.74rem }
+  .row label{ flex:0 0 74px; color:var(--stone-dim) }
+  .row input[type=range]{ flex:1; accent-color:var(--gold) }
+  .row .val{ flex:0 0 62px; text-align:right; font-variant-numeric:tabular-nums; color:var(--stone) }
+  .btnRow{ display:flex; gap:6px; flex-wrap:wrap; margin-top:4px }
+  button{ background:#241d16; border:1px solid #d9a35355; color:var(--stone);
+    border-radius:8px; padding:6px 9px; font-family:inherit; font-size:.72rem; cursor:pointer }
+  button:hover{ border-color:var(--gold); color:var(--gold) }
+  button.on{ background:var(--gold); color:#241c0e; border-color:var(--gold) }
+  .chk{ display:flex; align-items:center; gap:6px; font-size:.73rem; color:var(--stone-dim); margin-bottom:6px }
+  .chk input{ accent-color:var(--gold) }
+
+  #sun{ position:absolute; left:14px; bottom:14px; z-index:10; padding:10px 13px; font-size:.73rem;
+    line-height:1.7; color:var(--stone-dim) }
+  #sun b{ color:var(--stone); font-variant-numeric:tabular-nums }
+
+  #err{ position:absolute; inset:0; z-index:60; display:none; align-items:center; justify-content:center;
+    background:#0d0b08f2; padding:30px; text-align:center }
+  #err.show{ display:flex }
+  #err div{ max-width:520px; font-size:.85rem; line-height:1.7 }
+</style>
+</head>
+<body>
+<div id="cesiumContainer"></div>
+
+<div class="panel" id="head">
+  <div class="tag">BibleAtlas · Realism Prototype</div>
+  <h1>실사 모드 — 실제 태양·그림자</h1>
+  <p>MapLibre 판에서 막혔던 세 가지를 확인하기 위한 <b>비교용 프로토타입</b>입니다.<br>
+     ① 피치 제한 없이 <b>지면에서 하늘을 올려다보기</b><br>
+     ② 시각에 따라 움직이는 <b>실제 지형 그림자</b><br>
+     ③ 카메라가 지형을 뚫지 않음 (검은 화면 없음)</p>
+</div>
+
+<div class="panel" id="ctl">
+  <h2>시각 · 시점</h2>
+  <div class="row">
+    <label>유대력</label>
+    <input type="range" id="hour" min="1" max="12" step="0.25" value="6">
+    <span class="val" id="hourVal">제6시</span>
+  </div>
+  <div class="btnRow">
+    <button data-h="3">제3시</button>
+    <button data-h="6" class="on">제6시</button>
+    <button data-h="9">제9시</button>
+    <button data-h="11">제11시</button>
+  </div>
+  <div style="height:10px"></div>
+  <h2>시점</h2>
+  <div class="btnRow">
+    <button id="viewTemple">성전 → 감람산</button>
+    <button id="viewOlivet">감람산 → 성전</button>
+    <button id="viewWide">전체 조망</button>
+  </div>
+  <div style="height:10px"></div>
+  <h2>표시</h2>
+  <label class="chk"><input type="checkbox" id="chkShadow" checked> 지형 그림자</label>
+  <label class="chk"><input type="checkbox" id="chkPlaces" checked> 1세기 핵심 지명</label>
+  <label class="chk"><input type="checkbox" id="chkAtmo" checked> 대기 산란</label>
+</div>
+
+<div class="panel" id="sun">
+  태양 고도 <b id="sunAlt">—</b> · 방위 <b id="sunAz">—</b><br>
+  카메라 피치 <b id="camPitch">—</b> · 고도 <b id="camHeight">—</b>
+</div>
+
+<div id="err"><div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/cesium@1.123/Build/Cesium/Cesium.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════════════════
+   BibleAtlas 실사 모드 프로토타입
+
+   목적: MapLibre 판의 구조적 한계(피치 85°, 시야각 60°, 카메라 지형 관통,
+   그림자 없음)가 Cesium 에서 어떻게 해소되는지 눈으로 비교하기 위한 것.
+
+   외부 키가 필요 없다:
+     · 지형  ArcGIS WorldElevation3D/Terrain3D  (LOD 16, 키 불필요)
+     · 영상  Esri World Imagery MapServer       (키 불필요)
+     · 태양  Cesium 이 시계(clock)에서 물리적으로 계산 — 별도 계산 코드 불필요
+   ══════════════════════════════════════════════════════════════════════════ */
+'use strict';
+
+const JERUSALEM = { lng: 35.2345, lat: 31.7767 };
+const TEMPLE    = { lng: 35.2354, lat: 31.7780 };
+const OLIVET    = { lng: 35.2458, lat: 31.7784 };
+/* 기준일: 니산 무렵(춘분 직후). 유대력 '제N시'는 시계 시각이 아니라
+   일출~일몰을 12등분한 낮 시간이므로, 일출 시각에서 역산한다. */
+const BASE_DAY = '2026-04-02';
+
+function fatal(msg){
+  const e = document.getElementById('err');
+  e.querySelector('div').innerHTML = msg;
+  e.classList.add('show');
+}
+if (typeof Cesium === 'undefined'){
+  fatal('Cesium 라이브러리를 불러오지 못했습니다.<br>인터넷 연결을 확인해 주세요.');
+  throw new Error('Cesium not loaded');
+}
+// ion 자산을 쓰지 않으므로 기본 토큰 요청이 나가지 않도록 비운다
+Cesium.Ion.defaultAccessToken = undefined;
+
+let viewer, placeEntities = [];
+
+(async function init(){
+  try{
+    viewer = new Cesium.Viewer('cesiumContainer', {
+      // 키 없는 Esri 위성 영상
+      baseLayer: Cesium.ImageryLayer.fromProviderAsync(
+        Cesium.ArcGisMapServerImageryProvider.fromUrl(
+          'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
+          { enablePickFeatures: false })),
+      baseLayerPicker: false, geocoder: false, homeButton: false,
+      sceneModePicker: false, navigationHelpButton: false, infoBox: false,
+      selectionIndicator: false, timeline: false, animation: false,
+      fullscreenButton: false,
+      shadows: true,
+      terrainShadows: Cesium.ShadowMode.ENABLED,
+    });
+
+    // 키 없는 고해상도 지형 (LOD 16)
+    viewer.terrainProvider = await Cesium.ArcGISTiledElevationTerrainProvider.fromUrl(
+      'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer');
+
+    const scene = viewer.scene;
+    scene.globe.enableLighting = true;        // 태양 위치에 따른 지형 명암
+    scene.globe.depthTestAgainstTerrain = true;
+    scene.skyAtmosphere.show = true;
+    scene.fog.enabled = true;
+    scene.globe.showGroundAtmosphere = true;
+    scene.shadowMap.softShadows = true;
+    scene.shadowMap.size = 2048;
+    scene.shadowMap.maximumDistance = 12000;
+    viewer.clock.shouldAnimate = false;
+
+    addPlaces();
+    setJewishHour(6);
+    flyTempleToOlivet();
+
+    /* 그림자맵은 카메라 주변 일정 거리까지만 계산한다. 넓게 조망하면 그 경계가
+       어두운 띠로 보이므로, 카메라 고도에 따라 사거리를 늘리고 아주 높은
+       고도에서는 지형 그림자를 끈다(그 축척에서는 어차피 보이지 않는다). */
+    scene.camera.changed.addEventListener(adaptShadows);
+    scene.camera.percentageChanged = 0.2;
+    adaptShadows();
+
+    scene.postRender.addEventListener(updateReadout);
+  }catch(err){
+    fatal('초기화 실패: ' + (err && err.message ? err.message : err));
+    console.error(err);
+  }
+})();
+
+/* ── 유대력 시각 → 실제 시각 ────────────────────────────────
+   Cesium 이 태양 위치를 시계에서 계산하므로, 우리는 '언제인가'만 정하면 된다.
+   일출/일몰은 태양 적위와 위도로 구한 반일주호로 계산한다. */
+function jewishHourToDate(hour){
+  const d = new Date(BASE_DAY + 'T12:00:00Z');
+  const N = Math.floor((d - new Date(d.getUTCFullYear(), 0, 0)) / 86400000);
+  const decl = 23.44 * Math.sin((360 / 365.25) * (N - 81) * Math.PI / 180);   // 근사 적위
+  const latR = JERUSALEM.lat * Math.PI / 180, declR = decl * Math.PI / 180;
+  const cosH = -Math.tan(latR) * Math.tan(declR);
+  const halfDayHours = Math.acos(Math.min(1, Math.max(-1, cosH))) * 180 / Math.PI / 15;
+  const solarNoonUTC = 12 - JERUSALEM.lng / 15;               // 진태양시 정오(UTC)
+  const sunriseUTC = solarNoonUTC - halfDayHours;
+  const dayHour = (halfDayHours * 2) / 12;                     // 낮 1시간 길이
+  const utcHours = sunriseUTC + (hour - 0.5) * dayHour;
+  const base = new Date(BASE_DAY + 'T00:00:00Z');
+  return new Date(base.getTime() + utcHours * 3600000);
+}
+
+function setJewishHour(hour){
+  const when = jewishHourToDate(hour);
+  viewer.clock.currentTime = Cesium.JulianDate.fromDate(when);
+  viewer.scene.requestRender();
+  document.getElementById('hourVal').textContent =
+    '제' + (Number.isInteger(hour) ? hour : hour.toFixed(2)) + '시';
+}
+
+/* ── 태양 고도·방위 읽기 (표시용) ─────────────────────────── */
+function sunAltAz(){
+  const t = viewer.clock.currentTime;
+  const sunPos = Cesium.Simon1994PlanetaryPositions.computeSunPositionInEarthInertialFrame(t);
+  const icrfToFixed = Cesium.Transforms.computeTemeToPseudoFixedMatrix(t);
+  if (!icrfToFixed) return null;
+  const sunFixed = Cesium.Matrix3.multiplyByVector(icrfToFixed, sunPos, new Cesium.Cartesian3());
+  const origin = Cesium.Cartesian3.fromDegrees(JERUSALEM.lng, JERUSALEM.lat, 800);
+  const enu = Cesium.Transforms.eastNorthUpToFixedFrame(origin);
+  const inv = Cesium.Matrix4.inverse(enu, new Cesium.Matrix4());
+  const local = Cesium.Matrix4.multiplyByPoint(inv, sunFixed, new Cesium.Cartesian3());
+  const n = Cesium.Cartesian3.normalize(local, new Cesium.Cartesian3());
+  const alt = Math.asin(n.z) * 180 / Math.PI;
+  let az = Math.atan2(n.x, n.y) * 180 / Math.PI;
+  if (az < 0) az += 360;
+  return { alt, az };
+}
+
+/* 카메라 고도에 맞춰 그림자 사거리를 조절한다 */
+function adaptShadows(){
+  if (!viewer) return;
+  const carto = Cesium.Cartographic.fromCartesian(viewer.camera.positionWC);
+  const h = carto ? carto.height : 1000;
+  const wantTerrain = h < 15000 && document.getElementById('chkShadow').checked;
+  viewer.terrainShadows = wantTerrain ? Cesium.ShadowMode.ENABLED : Cesium.ShadowMode.DISABLED;
+  // 사거리를 카메라 고도의 6배로 — 경계가 화면 밖에 놓이게 한다
+  viewer.scene.shadowMap.maximumDistance = Math.min(200000, Math.max(6000, h * 6));
+}
+
+function updateReadout(){
+  const s = sunAltAz();
+  if (s){
+    document.getElementById('sunAlt').textContent = s.alt.toFixed(1) + '°';
+    document.getElementById('sunAz').textContent = s.az.toFixed(1) + '°';
+  }
+  const cam = viewer.camera;
+  document.getElementById('camPitch').textContent = (90 + Cesium.Math.toDegrees(cam.pitch)).toFixed(0) + '°';
+  const carto = Cesium.Cartographic.fromCartesian(cam.positionWC);
+  document.getElementById('camHeight').textContent = carto ? Math.round(carto.height) + ' m' : '—';
+}
+
+/* ── 1세기 핵심 지명 (빨간 점) ─────────────────────────────── */
+const KEY_PLACES = [
+  ['예루살렘',35.2345,31.7767],['베들레헴',35.2024,31.7054],['헤로디온',35.2414,31.6656],
+  ['헤브론',35.0997,31.5326],['엠마오',34.9890,31.8390],['에브라임',35.2960,31.9560],
+  ['쿰란',35.4590,31.7410],['엔게디',35.3880,31.4610],['마사다',35.3536,31.3156],
+  ['아리마대',35.0480,32.0330],['모데인',35.0100,31.9300],['가이사랴',34.8917,32.5000],
+  ['욥바',34.7550,32.0530],['룻다',34.8900,31.9500],['얌니아',34.7400,31.8700],
+  ['안디바드리',34.9350,32.1030],['아소도',34.6500,31.7500],['아스글론',34.5510,31.6658],
+  ['가사',34.4668,31.5017],['돌',34.9200,32.6167],['돌레마이',35.0700,32.9280],
+  ['세바스테',35.1920,32.2800],['세겜',35.2800,32.2130],['그리심산',35.2730,32.2000],
+  ['살렘',35.4300,32.3300],['나사렛',35.2978,32.7021],['세포리스',35.2790,32.7520],
+  ['디베랴',35.5320,32.7950],['막달라',35.5170,32.8250],['고라신',35.5640,32.9110],
+  ['게네사렛',35.5300,32.8500],['나인',35.3450,32.6310],['다볼산',35.3900,32.6870],
+  ['요타파타',35.2760,32.8360],['기샬라',35.4460,33.0250],['벧산',35.5000,32.5000],
+  ['펠라',35.6170,32.4500],['가다라',35.6850,32.6550],['히포스',35.6600,32.7780],
+  ['아빌라',35.8700,32.6800],['거라사',35.8910,32.2810],['빌라델비아',35.9330,31.9500],
+  ['율리아',35.6300,31.8300],['시돈',35.3750,33.5600],['헤르몬산',35.8570,33.4160],
+  ['브엘세바',34.7913,31.2530],['마레사',34.8990,31.6100],
+];
+function addPlaces(){
+  KEY_PLACES.forEach(([name, lng, lat]) => {
+    placeEntities.push(viewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(lng, lat),
+      point: {
+        pixelSize: 9,
+        color: Cesium.Color.fromCssColorString('#e02b23'),
+        outlineColor: Cesium.Color.fromCssColorString('#2a0b08'),
+        outlineWidth: 2,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        disableDepthTestDistance: 0,        // 지형에 가리면 안 보인다(= 실제 가시성)
+      },
+      label: {
+        text: name,
+        font: '600 14px "Noto Sans KR", sans-serif',
+        fillColor: Cesium.Color.fromCssColorString('#ffd9d4'),
+        outlineColor: Cesium.Color.fromCssColorString('#2a0b08'),
+        outlineWidth: 3,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        pixelOffset: new Cesium.Cartesian2(10, 0),
+        horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        translucencyByDistance: new Cesium.NearFarScalar(2e4, 1.0, 3e5, 0.0),
+      },
+    }));
+  });
+}
+
+/* ── 시점 프리셋 ────────────────────────────────────────────
+   Cesium 은 피치 제한이 없어 지면에서 하늘을 올려다보는 각도가 가능하다.
+   MapLibre 는 85°가 하드 리밋이라 수평선 위를 볼 수 없었다. */
+function lookFromTo(from, to, eyeAboveGround, pitchDeg){
+  const dest = Cesium.Cartesian3.fromDegrees(from.lng, from.lat,
+    (viewer.scene.globe.getHeight(Cesium.Cartographic.fromDegrees(from.lng, from.lat)) || 700) + eyeAboveGround);
+  const dLng = to.lng - from.lng, dLat = to.lat - from.lat;
+  const heading = Math.atan2(dLng * Math.cos(from.lat * Math.PI / 180), dLat);
+  viewer.camera.flyTo({
+    destination: dest,
+    orientation: { heading, pitch: Cesium.Math.toRadians(pitchDeg), roll: 0 },
+    duration: 2.0,
+  });
+}
+function flyTempleToOlivet(){ lookFromTo(TEMPLE, OLIVET, 25, -3); }   // 거의 수평 — 하늘이 보인다
+function flyOlivetToTemple(){ lookFromTo(OLIVET, TEMPLE, 25, -6); }
+function flyWide(){
+  viewer.camera.flyTo({
+    destination: Cesium.Cartesian3.fromDegrees(35.35, 31.55, 42000),
+    orientation: { heading: Cesium.Math.toRadians(10), pitch: Cesium.Math.toRadians(-32), roll: 0 },
+    duration: 2.0,
+  });
+}
+
+/* ── UI ─────────────────────────────────────────────────── */
+document.getElementById('hour').addEventListener('input', e => {
+  setJewishHour(Number(e.target.value));
+  document.querySelectorAll('.btnRow [data-h]').forEach(b => b.classList.remove('on'));
+});
+document.querySelectorAll('[data-h]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const h = Number(btn.dataset.h);
+    document.getElementById('hour').value = h;
+    setJewishHour(h);
+    document.querySelectorAll('[data-h]').forEach(b => b.classList.toggle('on', b === btn));
+  });
+});
+document.getElementById('viewTemple').addEventListener('click', flyTempleToOlivet);
+document.getElementById('viewOlivet').addEventListener('click', flyOlivetToTemple);
+document.getElementById('viewWide').addEventListener('click', flyWide);
+document.getElementById('chkShadow').addEventListener('change', e => {
+  viewer.shadows = e.target.checked;
+  adaptShadows();
+});
+document.getElementById('chkPlaces').addEventListener('change', e => {
+  placeEntities.forEach(en => { en.show = e.target.checked; });
+});
+document.getElementById('chkAtmo').addEventListener('change', e => {
+  viewer.scene.skyAtmosphere.show = e.target.checked;
+  viewer.scene.globe.showGroundAtmosphere = e.target.checked;
+  viewer.scene.fog.enabled = e.target.checked;
+});
+
+// 디버깅·검증용 훅
+window.BibleAtlasCesium = { get viewer(){ return viewer; }, setJewishHour, sunAltAz,
+  flyTempleToOlivet, flyOlivetToTemple, flyWide };
+</script>
+</body>
+</html>
