@@ -109,25 +109,23 @@
   #sunReadout{margin-top:9px;padding-top:8px;border-top:1px solid #3a3128;
     font-size:.69rem;line-height:1.6;color:var(--stone-dim)}
   #sunReadout b{color:var(--stone);font-variant-numeric:tabular-nums}
-  /* 상단 범례: 헤더와 겹치지 않게 */
-  #terrLegend{left:auto;right:300px;transform:none;
-    max-width:min(900px,calc(100vw - 700px))}
   /* ── 레이어 트리 토글 버튼 활성 표시 ── */
   #treeToggleBtn[aria-expanded="true"]{background:var(--gold);color:#241c0e;border-color:var(--gold)}
   @media (max-width:1100px){ #realCtl{display:none} }
+  /* 분봉왕 행정구역 라벨 — 색 스와치 + 통치자명(상단 범례 패널을 대체한다) */
+  .treeNote{ margin:2px 0 6px; font-size:11px; color:#8b93a7; line-height:1.4; }
+  .terrSwatch{ flex:0 0 auto; width:11px; height:11px; border-radius:3px;
+               border:1px solid rgba(0,0,0,.35); display:inline-block; }
+  .terrLabelText{ flex:1 1 auto; }
+  .terrRuler{ color:#98a0b3; }
+  #treePanel label:has(.terrSwatch){ display:flex; align-items:center; gap:6px; }
+  .rangeVal{ flex:0 0 auto; min-width:34px; text-align:right; color:#98a0b3; font-variant-numeric:tabular-nums; }
 </style>
 </head>
 <body>
 
 <div id="cesiumContainer"></div>
 <div id="map" style="display:none"></div>
-
-<div id="terrLegend" aria-label="분봉왕 행정구역 범례">
-  <div class="tlTitle">분봉왕 행정구역 <small>눅 3:1 · AD 26~36 빌라도 재임기</small></div>
-  <button id="tlFold" title="범례 접기/펼치기" aria-label="분봉왕 범례 접기">▲</button>
-  <div class="tlItems" id="tlItems"></div>
-  <label class="tlAll"><input type="checkbox" id="tlMaster" checked> 전체</label>
-</div>
 
 <header id="hdr">
   <button id="hdrToggle" title="설명 패널 접기/펼치기" aria-label="설명 패널 접기">◀</button>
@@ -204,20 +202,17 @@
       <label><input type="checkbox" id="treeJohnLines" checked> 사역 여정 선</label>
       <label><input type="checkbox" id="treeJohnSites" checked> 사역 포인트</label>
     </details>
+
+    <details open>
+      <summary>조작</summary>
+      <div class="rangeRow"><span>줌 속도</span><input type="range" id="zoomSpeed" min="0.5" max="5" step="0.1" value="2"><span id="zoomSpeedVal" class="rangeVal">2.0×</span></div>
+    </details>
   </div>
 </div>
 
 <div id="pointHud" aria-live="polite">
   <button id="pointHudClose" aria-label="포인트 설명 닫기">✕</button>
   <div id="pointHudBody"><b>포인트를 선택하세요</b><span>지도 위 HUD 라벨을 누르면 간략 설명이 여기 표시됩니다.</span></div>
-</div>
-
-<div id="accuracyLegend" aria-hidden="true">
-  <div><span class="grade a">A</span><b>고고학 앵커</b> · 유적/실측 위치가 비교적 확실</div>
-  <div><span class="grade b">B</span><b>문헌+고고학 근사</b> · 지점/회랑 단위</div>
-  <div><span class="grade c">C</span><b>전승·논쟁 위치</b> · 정확한 점이 아닌 참고</div>
-  <div style="margin-top:5px">해발은 동일 DEM을 양선형 보간해 지도·단면에 공통 사용. 성전산은 별도 고고학 기준값을 함께 표시.<br>
-  Google Elevation/Photorealistic 3D는 API 키가 필요한 검증 소스이므로 이 단독 HTML에는 키를 내장하지 않습니다.</div>
 </div>
 
 <div id="profilePanel" role="region" aria-label="고도 단면">
@@ -264,7 +259,6 @@
     <code id="errDetail"></code>
   </div>
 </div>
-
 
 <!-- 실사 모드 전용: 시각·시점·그림자 -->
 <div class="panel" id="realCtl">
@@ -516,7 +510,11 @@ function setupMapLibreStyleControls(){
     const carto = Cesium.Cartographic.fromCartesian(cam.positionWC);
     const height = carto ? carto.height : 3000;
     // 고도에 비례한 배율 — 높은 곳에서는 성큼, 지면 근처에서는 촘촘하게
-    const step = Math.max(12, height * 0.22);
+    /* 줌 속도 배율: 레이어 트리의 '줌 속도' 슬라이더(0.5~5.0)로 조절한다.
+       screenSpaceCameraController.zoomFactor 는 이렇게 휠을 직접 처리하는 경우
+       반영되지 않는다(실측 확인). 그래서 이동량에 직접 곱한다. 5.0 이 종전 속도. */
+    const speed = (window.BibleAtlasZoom && window.BibleAtlasZoom.speed) || 2;
+    const step = Math.max(12, height * 0.22) * (speed / 5);
     cam.moveBackward(e.deltaY > 0 ? step : -step);
     viewer.scene.requestRender();
   }, { passive: false, capture: true });
@@ -588,7 +586,6 @@ document.querySelectorAll('[data-h]').forEach(btn => {
   viewer.shadows = e.target.checked;
   adaptShadows();
 });
-
 
 /* 길 따라 이동 — 현재 단면 경로를 지면 높이에서 따라간다 */
 (document.getElementById('walkRoute')||{addEventListener(){}}).addEventListener('click', () => {

@@ -251,3 +251,15 @@
   @media (prefers-reduced-motion:reduce){
     #profilePanel{transition:none}
   }
+
+/* '☰ 레이어 트리' 버튼을 바로 위 '🏛️ 헤롯 성전 보기' 버튼과 같은 모양·크기로 맞춘다.
+   두 버튼 모두 .chip 이지만, 헤롯 버튼은 #routes 안이라 폭·여백 규칙을 따로 받는다.
+   같은 값을 트리 버튼에도 주고, 오른쪽 끝을 #routes 와 맞춘다. */
+#treeToggleBtn{
+  align-self:flex-end; width:var(--dockBtnW,188px);
+  justify-content:center; text-align:center; padding:8px 10px; white-space:nowrap;
+}
+/* 이모지가 든 버튼은 줄 높이가 2px 더 커진다. 두 버튼 높이를 같게 고정한다. */
+#routes .chip, #treeToggleBtn{ line-height:20px }
+@media (max-width:900px){ #treeToggleBtn{ --dockBtnW:200px } }
+@media (max-width:640px){ #treeToggleBtn{ --dockBtnW:min(210px,calc(100vw - 20px)) } }
