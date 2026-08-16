@@ -127,12 +127,22 @@ function applyNoonSky(){
        원경 능선이 겹겹이 물러나도록 fog를 지면 쪽으로 조금 더 내림 */
     /* v20: 구름·흰 안개 띠 제거 — 맑고 건조한 하늘, 지평선 선명.
        원경 깊이는 fog가 아니라 힐셰이드 명암으로 낸다 */
+    /* 하늘색을 태양 고도에서 유도한다.
+       고도 60°+ = 한낮의 깊은 파랑, 20° 이하 = 노을빛으로 지평선이 물든다.
+       (색은 임의값이 아니라 태양 고도의 함수 — 시간대를 바꾸면 함께 변한다) */
+    const alt = (window.BibleAtlasLight && window.BibleAtlasLight.sun.altitude) ?? 62;
+    const day = clamp01((alt - 5) / 45);                 // 0 = 지평선 부근, 1 = 한낮
+    const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+    const rgb = c => `rgb(${c[0]},${c[1]},${c[2]})`;
+    const zenith  = mix([120, 128, 168], [42, 99, 184], day);    // 노을 회보라 → 한낮 파랑
+    const horizon = mix([226, 168, 116], [169, 191, 214], day);  // 주황 → 옅은 청회
+    const fog     = mix([214, 176, 140], [201, 194, 176], day);
     map.setSky({
-      'sky-color': '#2a63b8',
+      'sky-color': rgb(zenith),
       'sky-horizon-blend': 0.55,
-      'horizon-color': '#a9bfd6',
+      'horizon-color': rgb(horizon),
       'horizon-fog-blend': 0.25,
-      'fog-color': '#c9c2b0',
+      'fog-color': rgb(fog),
       'fog-ground-blend': 0.02,
       'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 0.35, 11, 0.20, 14, 0.10, 20, 0.04],
     });
@@ -142,20 +152,56 @@ map.on('load', () => {
   map.setTerrain({ source:'dem', exaggeration:1.6 });
   applyNoonSky();
 
-  /* v19: 광원 방향을 카메라 방위와 연동 — 태양은 남서(지리 방위 225°)에 고정,
-     화면 기준 광원각 = 태양 방위 − 카메라 방위. 회전하면 그림자가 실제처럼 반대로 돈다 */
-  const SUN_AZIMUTH = 240;   // 오후 늦은 태양 — 그림자 길게
+  /* ── 실제 태양 위치로 조명 구동 ───────────────────────────────
+     이전에는 상수(240°)였다. 이제 05-sun.js 가 날짜·시각·좌표로 계산한 실제
+     태양 방위·고도를 쓴다. 화면 기준 광원각 = 태양 방위 − 카메라 방위이므로
+     지도를 돌려도 태양은 지리적으로 제자리에 있고 그림자만 따라 돈다.
+     고도(altitude)는 음영의 세기에도 반영된다 — 낮은 태양일수록 그림자가 길다. */
+  const SUN_ORIGIN = { lat: 31.7767, lng: 35.2345 };   // 예루살렘 기준
+  const SUN_BASE_DAY = Date.UTC(2026, 3, 2, 12);       // 니산 무렵(춘분 직후) 기준일
+  window.BibleAtlasLight = {
+    // 기본값 = 유대력 제육시. 성경의 '제육시'는 시계 12시가 아니라 태양 남중이다
+    moment: window.BibleAtlasSun
+      ? window.BibleAtlasSun.jewishHour(new Date(SUN_BASE_DAY), SUN_ORIGIN.lat, SUN_ORIGIN.lng, 6)
+      : new Date(SUN_BASE_DAY),
+    sun: { azimuth: 180, altitude: 62 },
+  };
+  function computeSun(){
+    const S = window.BibleAtlasSun;
+    if (S) window.BibleAtlasLight.sun = S.position(window.BibleAtlasLight.moment, SUN_ORIGIN.lat, SUN_ORIGIN.lng);
+    return window.BibleAtlasLight.sun;
+  }
   let lightRAF = null;
   function updateLight(){
     lightRAF = null;
     if (!map.getLayer('hill')) return;
-    const dir = ((SUN_AZIMUTH - map.getBearing()) % 360 + 360) % 360;
-    map.setPaintProperty('hill', 'hillshade-illumination-direction', dir);
-    if (map.getLayer('hillFine')) map.setPaintProperty('hillFine', 'hillshade-illumination-direction', dir);
-    if (map.getLayer('hillRim'))  map.setPaintProperty('hillRim',  'hillshade-illumination-direction', dir);
+    const sun = window.BibleAtlasLight.sun;
+    const dir = ((sun.azimuth - map.getBearing()) % 360 + 360) % 360;
+    // 태양이 낮을수록 음영을 강하게 — 아침·저녁의 긴 그림자를 흉내낸다
+    const lowSun = 1 + 0.75 * clamp01((60 - sun.altitude) / 50);
+    [['hill', 0.30], ['hillFine', 0.14], ['hillRim', 0.06]].forEach(([id, base]) => {
+      if (!map.getLayer(id)) return;
+      map.setPaintProperty(id, 'hillshade-illumination-direction', dir);
+      map.setPaintProperty(id, 'hillshade-exaggeration', Math.min(0.95, base * lowSun));
+    });
   }
+  /** 임의 시각으로 조명·하늘을 옮긴다 (UI 슬라이더용) */
+  window.setSunMoment = function (date){
+    window.BibleAtlasLight.moment = date;
+    computeSun(); updateLight(); applyNoonSky();
+    return window.BibleAtlasLight.sun;
+  };
+  /** 유대력 제N시로 이동 — 예: setJewishHour(9) → '제구시' */
+  window.setJewishHour = function (hour, dateUTC){
+    const S = window.BibleAtlasSun;
+    if (!S) return null;
+    return window.setSunMoment(
+      S.jewishHour(dateUTC || new Date(SUN_BASE_DAY), SUN_ORIGIN.lat, SUN_ORIGIN.lng, hour));
+  };
+  computeSun();
   map.on('rotate', () => { if (!lightRAF) lightRAF = requestAnimationFrame(updateLight); });
   updateLight();
+  applyNoonSky();
 
   updateCameraFeel();
   map.addSource('secLine', { type:'geojson', data:emptyFC() });
