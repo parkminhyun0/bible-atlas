@@ -15,35 +15,6 @@
   html,body{height:100%;background:var(--bg);color:var(--stone);
     font-family:'Noto Sans KR',system-ui,sans-serif;overflow:hidden}
   #map{position:absolute;inset:0}
-  #terrLegend{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:14;
-    display:flex;align-items:center;gap:12px;flex-wrap:wrap;max-width:min(1080px,calc(100vw - 400px));
-    background:#171310ee;border:1px solid #d9a35355;border-radius:12px;padding:9px 14px;
-    box-shadow:0 6px 22px rgba(0,0,0,.45)}
-  #terrLegend.folded #tlItems,#terrLegend.folded .tlAll{display:none}
-  #terrLegend.folded{padding:7px 12px}
-  #tlFold{width:24px;height:24px;border-radius:50%;border:1px solid #3a3128;background:#241d16;
-    color:var(--gold);cursor:pointer;font-family:inherit;font-size:.66rem;flex:0 0 auto;
-    display:flex;align-items:center;justify-content:center;margin-left:2px}
-  #tlFold:hover{border-color:var(--gold)}
-  #terrLegend .tlTitle{font-family:'Noto Serif KR',serif;font-weight:700;font-size:.82rem;color:var(--gold);white-space:nowrap}
-  #terrLegend .tlTitle small{display:block;font-family:'Noto Sans KR',sans-serif;font-weight:400;
-    font-size:.62rem;color:var(--stone-dim);margin-top:1px}
-  #terrLegend .tlItems{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-  #terrLegend .tlItem{display:flex;align-items:center;gap:6px;cursor:pointer;
-    background:#241d16;border:1px solid #3a3128;border-radius:9px;padding:5px 9px 5px 7px;transition:border-color .15s,opacity .15s}
-  #terrLegend .tlItem:hover{border-color:var(--gold)}
-  #terrLegend .tlItem.off{opacity:.42}
-  #terrLegend .tlItem input{accent-color:var(--gold);margin:0;cursor:pointer}
-  #terrLegend .swatch{width:14px;height:14px;border-radius:4px;border:1.5px solid #0e0b08;flex:0 0 auto}
-  #terrLegend .tlName{font-size:.74rem;color:var(--stone);font-weight:700;line-height:1.15;white-space:nowrap}
-  #terrLegend .tlRuler{display:block;font-size:.62rem;color:var(--stone-dim);font-weight:400}
-  #terrLegend .tlAll{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--stone-dim);
-    white-space:nowrap;border-left:1px solid #3a3128;padding-left:11px}
-  #terrLegend .tlAll input{accent-color:var(--gold);cursor:pointer}
-  @media (max-width:1100px){
-    #terrLegend{max-width:calc(100vw - 28px);top:auto;bottom:calc(14px + 250px);left:14px;transform:none}
-    #terrLegend .tlRuler{display:none}
-  }
 
   header{position:absolute;top:14px;left:14px;z-index:10;
     background:color-mix(in srgb,var(--panel) 88%,transparent);
@@ -180,15 +151,6 @@
   #errBox code{display:block;margin-top:12px;font-size:.72rem;color:var(--stone);
     background:#171310;border-radius:6px;padding:8px 10px;word-break:break-all}
 
-  #accuracyLegend{position:absolute;left:14px;bottom:220px;z-index:10;max-width:340px;
-    background:color-mix(in srgb,var(--panel) 91%,transparent);backdrop-filter:blur(9px);
-    border:1px solid #40352277;border-radius:var(--radius);padding:10px 12px;
-    font-size:.68rem;line-height:1.55;color:var(--stone-dim);pointer-events:none}
-  #accuracyLegend b{color:var(--stone)}
-  #accuracyLegend .grade{display:inline-flex;align-items:center;justify-content:center;
-    width:18px;height:18px;border-radius:50%;font-weight:700;margin-right:4px;border:1px solid #fff4}
-  #accuracyLegend .a{color:#bce0aa;border-color:#9fd38a88}.grade.b{color:#f1d28f;border-color:#d9a35388}
-  #accuracyLegend .c{color:#dda18f;border-color:#c4694f88}
   .siteLabel .badge{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
     border-radius:50%;font-size:.58rem;margin-right:4px;border:1px solid currentColor;vertical-align:1px}
   .siteLabel.gradeA{border-color:#9fd38a99}.siteLabel.gradeA .badge{color:#bce0aa}
@@ -206,9 +168,9 @@
   #routes{position:absolute;top:14px;right:14px;z-index:12;display:flex;flex-direction:column;gap:8px;align-items:stretch;width:188px}
   #routes .chip{justify-content:center;text-align:center;padding:8px 10px;white-space:nowrap}
   #routes .legacyCtl{display:none!important}
-  #treeDock{position:absolute;top:360px;right:14px;z-index:12;width:320px;display:flex;flex-direction:column;gap:8px}
-  #treeToggleBtn{justify-content:center}
-  #treePanel{background:color-mix(in srgb,var(--panel) 93%,transparent);backdrop-filter:blur(10px);border:1px solid #40352277;border-radius:var(--radius);padding:10px 12px;max-height:46vh;overflow:auto;box-shadow:0 10px 28px #0006}
+  #treeDock{position:absolute;top:360px;right:14px;z-index:12;width:320px;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+  #treeToggleBtn{justify-content:center;width:188px}
+  #treePanel{width:320px;background:color-mix(in srgb,var(--panel) 93%,transparent);backdrop-filter:blur(10px);border:1px solid #40352277;border-radius:var(--radius);padding:10px 12px;max-height:46vh;overflow:auto;box-shadow:0 10px 28px #0006}
   #treePanel.hidden{display:none}
   #treePanel details{border-bottom:1px solid #40352255;padding:6px 0}
   #treePanel details:last-child{border-bottom:none}
@@ -217,8 +179,11 @@
   #treePanel label{display:block;font-size:.75rem;line-height:1.45;color:var(--stone);margin:4px 0;cursor:pointer}
   #treePanel input[type="checkbox"]{margin-right:7px;accent-color:#d9a353}
   #treePanel .treeSub{padding-left:14px}
+  #treePanel .treeMeta{font-size:.68rem;line-height:1.45;color:var(--stone-dim);margin:-2px 0 7px}
+  #treePanel .terrSwatch{display:inline-block;width:10px;height:10px;border-radius:2px;border:1px solid #0e0b08;margin:0 6px 0 1px;vertical-align:0}
   #treePanel .rangeRow{display:flex;align-items:center;gap:10px;margin-top:8px;color:var(--stone-dim);font-size:.72rem}
   #treePanel input[type="range"]{flex:1;accent-color:#d9a353}
+  #treePanel .rangeValue{min-width:34px;text-align:right;color:var(--stone);font-variant-numeric:tabular-nums}
 
   #pointHud{position:absolute;right:14px;bottom:228px;z-index:12;width:310px;display:none;
     background:color-mix(in srgb,var(--panel) 94%,transparent);backdrop-filter:blur(10px);
@@ -233,6 +198,7 @@
   @media (max-width:900px){
     #routes{width:200px}
     #treeDock{top:auto;bottom:390px;right:10px;width:min(320px,calc(100vw - 20px))}
+    #treeToggleBtn{width:200px}
     #treePanel{max-height:34vh}
     #pointHud{width:min(310px,calc(100vw - 20px));right:10px;bottom:220px}
   }
@@ -242,8 +208,8 @@
     header{max-width:calc(100vw - 28px)}
     header p{display:none}
     #routes{top:auto;bottom:200px;right:10px;width:min(210px,calc(100vw - 20px))}
-    #accuracyLegend{display:none}
     #treeDock{bottom:410px;right:10px;top:auto;width:min(320px,calc(100vw - 20px))}
+    #treeToggleBtn{width:min(210px,calc(100vw - 20px))}
     #treePanel{max-height:30vh}
     .chip{padding:7px 12px;font-size:.76rem}
     #chart{height:160px}

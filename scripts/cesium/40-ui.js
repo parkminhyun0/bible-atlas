@@ -1,5 +1,5 @@
 /* ══════════════ Cesium 실사 모드 · 전체 UI 연결 ══════════════
-   index.html 과 동일한 DOM(레이어 트리·상단 범례·경로 칩·뷰 컨트롤)을 쓰되,
+   index.html 과 동일한 DOM(레이어 트리·경로 칩·뷰 컨트롤)을 쓰되,
    동작만 Cesium 쪽으로 연결한다. MapLibre 전용 스크립트(21·22·26·27·28·29)는
    불러오지 않는다 — 그 파일들은 map.* 을 직접 호출하기 때문이다.
 ============================================================================ */
@@ -41,48 +41,37 @@
 
   /* 실사 모드 패널을 헤더 '바로 아래'에 붙인다.
      헤더 높이는 본문 길이·창 폭에 따라 달라지므로 실제 높이를 재서 배치하고,
-     아래쪽 A·B·C 범례와 겹치지 않도록 남은 높이만큼만 차지하게 한다. */
+     아래쪽 뷰 컨트롤과 겹치지 않도록 남은 높이만큼만 차지하게 한다. */
   let realAutoCollapsed = false;      // 공간 부족으로 자동으로 접었는지
   function layoutLeftColumn(){
-    const hdr = $('hdr'), real = $('realCtl'), legend = $('accuracyLegend'),
-          view = $('viewCtl'), profile = $('profilePanel'), realBtn = $('realToggle');
+    const hdr = $('hdr'), real = $('realCtl'), view = $('viewCtl'),
+          profile = $('profilePanel'), realBtn = $('realToggle');
     if (!hdr || !real) return;
 
     /* 좌측 세로 배치
-         헤더 → 실사 모드 → (여백) → 뷰 컨트롤 → A·B·C 범례 → 단면 패널
+         헤더 → 실사 모드 → (여백) → 뷰 컨트롤 → 단면 패널
        아래쪽 묶음은 단면 패널이 열린 높이만큼 위로 밀려 올라간다.
-       창이 낮아 자리가 모자라면 중요도가 낮은 것부터 숨긴다:
-         ① A·B·C 범례(설명) → ② 뷰 컨트롤 → ③ 실사 모드 패널 */
+       창이 낮아 자리가 모자라면 뷰 컨트롤 → 실사 모드 패널 순으로 줄인다. */
     const gap = 10;
     const hdrBottom = hdr.offsetTop + hdr.offsetHeight;
     const floor = hdrBottom + gap;                 // 이 선보다 위로는 올라갈 수 없다
     const profileH = (profile && profile.classList.contains('open')) ? profile.offsetHeight : 0;
     const base = profileH + 24;
 
-    // ① 범례
-    let legendH = 0, legendShown = false;
-    if (legend){
-      legend.style.display = '';
-      legend.style.bottom = base + 'px';
-      legendShown = legend.offsetTop >= floor;
-      legend.style.display = legendShown ? '' : 'none';
-      legendH = legendShown ? legend.offsetHeight + gap : 0;
-    }
-    // ② 뷰 컨트롤
+    // ① 뷰 컨트롤
     let viewTop = null;
     if (view){
       view.style.display = '';
-      view.style.bottom = (base + legendH) + 'px';
+      view.style.bottom = base + 'px';
       const ok = view.offsetTop >= floor;
       view.style.display = ok ? '' : 'none';
       if (ok) viewTop = view.offsetTop;
     }
 
-    // ③ 실사 모드 패널 — 헤더 바로 아래, 남은 공간까지만
+    // ② 실사 모드 패널 — 헤더 바로 아래, 남은 공간까지만
     const top = floor;
     real.style.top = top + 'px';
-    const limit = viewTop != null ? viewTop
-      : (legendShown && legend ? legend.offsetTop : window.innerHeight - base);
+    const limit = viewTop != null ? viewTop : window.innerHeight - base;
     const avail = limit - top - 12;
 
     if (avail < 50){ real.style.display = 'none'; return; }   // 버튼조차 못 넣을 때
@@ -117,10 +106,30 @@
   window.addEventListener('bibleatlas-cesium-ready', layoutLeftColumn);
   setTimeout(layoutLeftColumn, 300);
 
-  /* 상단 분봉왕 범례 접기 */
-  on('tlFold', 'click', () => {
-    const l = $('terrLegend');
-    if (l) l.classList.toggle('folded');
+  /* ── 줌 속도: Cesium native zoomFactor + 커스텀 wheel 공통 값 ── */
+  const ZOOM_STORAGE_KEY = 'bibleatlas-cesium-zoom-factor';
+  const clampZoom = value => Math.min(5, Math.max(0.5, Number(value) || 2));
+  let zoomFactor = 2;
+  try { zoomFactor = clampZoom(localStorage.getItem(ZOOM_STORAGE_KEY) ?? 2); } catch (_) {}
+  window.BibleAtlasZoomFactor = zoomFactor;
+
+  function applyZoomFactor(value){
+    zoomFactor = clampZoom(value);
+    window.BibleAtlasZoomFactor = zoomFactor;
+    const slider = $('zoomSpeed'), readout = $('zoomSpeedVal');
+    if (slider && Number(slider.value) !== zoomFactor) slider.value = String(zoomFactor);
+    if (readout) readout.textContent = zoomFactor.toFixed(1) + '×';
+    const v = V();
+    if (v && v.scene && v.scene.screenSpaceCameraController){
+      v.scene.screenSpaceCameraController.zoomFactor = zoomFactor;
+      v.scene.requestRender();
+    }
+  }
+  applyZoomFactor(zoomFactor);
+  on('zoomSpeed', 'input', e => {
+    const value = clampZoom(e.target.value);
+    try { localStorage.setItem(ZOOM_STORAGE_KEY, String(value)); } catch (_) {}
+    applyZoomFactor(value);
   });
 
   /* ── 레이어 표시 토글 (트리 체크박스 ↔ Cesium 그룹) ── */
@@ -154,7 +163,7 @@
     applyRoads();
   });
 
-  /* ── 분봉왕 행정구역: 상단 범례 + 트리 ── */
+  /* ── 분봉왕 행정구역: 레이어 트리에서 개별/전체 제어 ── */
   const terrBoxes = [...document.querySelectorAll('.terr-item')];
   function applyTerritories(){
     // 개별 제어가 필요하므로 그룹 전체가 아니라 엔티티 이름으로 걸러 낸다
@@ -165,7 +174,14 @@
     });
     V() && V().scene.requestRender();
   }
-  terrBoxes.forEach(b => b.addEventListener('change', applyTerritories));
+  function syncTerrMaster(){
+    const master = $('treeTerrMaster');
+    if (master) master.checked = terrBoxes.length > 0 && terrBoxes.every(b => b.checked);
+  }
+  terrBoxes.forEach(b => b.addEventListener('change', () => {
+    applyTerritories();
+    syncTerrMaster();
+  }));
   on('treeTerrMaster', 'change', e => {
     terrBoxes.forEach(b => { b.checked = e.target.checked; });
     applyTerritories();
@@ -179,33 +195,6 @@
     });
     V() && V().scene.requestRender();
   });
-
-  // 상단 범례 항목 생성 (index.html 과 같은 모양)
-  const tlItems = $('tlItems'), tlMaster = $('tlMaster');
-  if (tlItems && typeof TERR !== 'undefined'){
-    TERR.forEach(t => {
-      const lab = document.createElement('label');
-      lab.className = 'tlItem';
-      lab.title = `${t.name} — ${t.ruler}`;
-      lab.innerHTML = `<input type="checkbox" checked data-key="${t.key}">` +
-        `<span class="swatch" style="background:${t.color}"></span>` +
-        `<span class="tlName" style="color:${t.color}">${t.name}<span class="tlRuler">${t.ruler}</span></span>`;
-      tlItems.appendChild(lab);
-      lab.querySelector('input').addEventListener('change', ev => {
-        const tree = document.querySelector(`.terr-item[data-key="${t.key}"]`);
-        if (tree){ tree.checked = ev.target.checked; }
-        lab.classList.toggle('off', !ev.target.checked);
-        applyTerritories();
-        if (tlMaster) tlMaster.checked = [...tlItems.querySelectorAll('input')].every(i => i.checked);
-      });
-    });
-    if (tlMaster) tlMaster.addEventListener('change', ev => {
-      tlItems.querySelectorAll('input').forEach(i => { i.checked = ev.target.checked; });
-      terrBoxes.forEach(b => { b.checked = ev.target.checked; });
-      tlItems.querySelectorAll('.tlItem').forEach(l => l.classList.toggle('off', !ev.target.checked));
-      applyTerritories();
-    });
-  }
 
   /* ── 경로 칩: 단면 만들기 ── */
   function setActiveChip(btn){
@@ -302,6 +291,7 @@
   window.addEventListener('bibleatlas-cesium-ready', () => {
     applyTerritories();
     applyRoads();
+    applyZoomFactor(zoomFactor);
     const panel = $('treePanel');
     if (panel && !panel.classList.contains('open')) panel.classList.add('open');
   });
