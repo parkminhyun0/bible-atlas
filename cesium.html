@@ -124,6 +124,7 @@
   <label class="chk"><input type="checkbox" id="chkJesus" checked> 예수님 사역 여정</label>
   <label class="chk"><input type="checkbox" id="chkJohn" checked> 세례 요한 여정</label>
   <label class="chk"><input type="checkbox" id="chkRoads" checked> 1세기 로마 도로</label>
+  <label class="chk"><input type="checkbox" id="chkBld" checked> 1세기 건축 재구성</label>
   <div style="height:10px"></div>
   <h2>단면 경로</h2>
   <div class="btnRow">
@@ -164,7 +165,9 @@
 <script src="./scripts/data/00-geo.js"></script>
 <script src="./scripts/data/10-elevation.js"></script>
 <script src="./scripts/cesium/10-layers.js"></script>
+<script src="./scripts/data/20-buildings.js"></script>
 <script src="./scripts/cesium/20-section.js"></script>
+<script src="./scripts/cesium/30-buildings-walk.js"></script>
 <script src="./scripts/20-profile.js"></script>
 <script>
 /* ══════════════════════════════════════════════════════════════════════════
@@ -234,6 +237,7 @@ let viewer, layerCounts = {};
 
     // 공통 데이터 레이어 (고증 포인트·핵심 지명·행정구역·여정·도로)
     layerCounts = BibleAtlasLayers.init(viewer);
+    layerCounts.buildings = BibleAtlasBuildings.add(viewer);
     console.log('Cesium 레이어:', layerCounts);
     setJewishHour(6);
     flyTempleToOlivet();
@@ -460,6 +464,21 @@ document.getElementById('chkShadow').addEventListener('change', e => {
   document.getElementById(id).addEventListener('change', e => {
     BibleAtlasLayers.setVisible(group, e.target.checked);
     viewer.scene.requestRender();
+  });
+});
+
+document.getElementById('chkBld').addEventListener('change', e => {
+  BibleAtlasBuildings.setVisible(e.target.checked);
+});
+
+/* 길 따라 이동 — 현재 단면 경로를 지면 높이에서 따라간다 */
+document.getElementById('walkRoute').addEventListener('click', () => {
+  const btn = document.getElementById('walkRoute');
+  if (BibleAtlasWalk.running){ BibleAtlasWalk.stop(); return; }
+  if (!currentProfile){ showToast('먼저 단면 경로를 선택해 주세요', 2500); return; }
+  BibleAtlasWalk.start(viewer, currentProfile, (on) => {
+    btn.classList.toggle('flying', on);
+    btn.textContent = on ? '⏹ 이동 중지' : '🚶 길 따라 이동';
   });
 });
 
