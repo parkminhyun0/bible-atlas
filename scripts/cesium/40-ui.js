@@ -133,7 +133,7 @@
     applyRoads();
   });
 
-  /* ── 분봉왕 행정구역: 상단 범례 + 트리 ── */
+  /* ── 분봉왕 행정구역: 레이어 트리에서 개별/전체 제어 ── */
   const terrBoxes = [...document.querySelectorAll('.terr-item')];
   function applyTerritories(){
     // 개별 제어가 필요하므로 그룹 전체가 아니라 엔티티 이름으로 걸러 낸다
@@ -144,7 +144,14 @@
     });
     V() && V().scene.requestRender();
   }
-  terrBoxes.forEach(b => b.addEventListener('change', applyTerritories));
+  /* 개별 항목이 바뀌면 '전체 행정구역 보기'의 체크 상태를 다시 계산한다.
+     제거한 상단 범례가 하던 동작을 트리 마스터가 그대로 이어받는다. */
+  function syncTerrMaster(){
+    const master = $('treeTerrMaster');
+    if (master) master.checked = terrBoxes.length > 0 && terrBoxes.every(b => b.checked);
+  }
+  terrBoxes.forEach(b => b.addEventListener('change', () => { applyTerritories(); syncTerrMaster(); }));
+  syncTerrMaster();
   on('treeTerrMaster', 'change', e => {
     terrBoxes.forEach(b => { b.checked = e.target.checked; });
     applyTerritories();
