@@ -1,0 +1,75 @@
+name: Rebuild verified original social preview
+
+on:
+  push:
+    branches:
+      - fix/social-preview-original
+    paths:
+      - .github/workflows/rebuild-share-v5.yml
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Rebuild and verify original-photo JPEG
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .tmp/share-v5.b64.part* | base64 --decode > assets/bibleatlas-share-v5.jpg
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          p = Path('assets/bibleatlas-share-v5.jpg')
+          data = p.read_bytes()
+          expected_sha = '67418a6b1f5e655021deaeb2834b54ac44b6bb4e2e72c47b35d63b03df8a93ff'
+          actual_sha = hashlib.sha256(data).hexdigest()
+          assert actual_sha == expected_sha, (actual_sha, expected_sha)
+          assert data[:2] == b'\xff\xd8', data[:4].hex()
+          assert data[-2:] == b'\xff\xd9', data[-4:].hex()
+
+          i = 2
+          width = height = None
+          while i + 4 <= len(data):
+              if data[i] != 0xff:
+                  i += 1
+                  continue
+              while i < len(data) and data[i] == 0xff:
+                  i += 1
+              if i >= len(data):
+                  break
+              marker = data[i]
+              i += 1
+              if marker in (0xd8, 0xd9):
+                  continue
+              if i + 2 > len(data):
+                  break
+              seglen = int.from_bytes(data[i:i+2], 'big')
+              if seglen < 2 or i + seglen > len(data):
+                  raise AssertionError(f'invalid JPEG segment: marker={marker:02x} len={seglen}')
+              if marker == 0xc0:
+                  height = int.from_bytes(data[i+3:i+5], 'big')
+                  width = int.from_bytes(data[i+5:i+7], 'big')
+                  break
+              i += seglen
+
+          assert (width, height) == (400, 210), (width, height)
+          print(f'PASS sha256={actual_sha} bytes={len(data)} size={width}x{height} SOF0 baseline JPEG')
+          PY
+      - name: Commit only the verified final asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .tmp
+          rm -f .github/workflows/rebuild-share-v5.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(share): add verified original-photo preview asset'
+          git push origin HEAD:fix/social-preview-original
