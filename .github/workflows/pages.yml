@@ -32,3 +32,42 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Verify live Open Graph crawler access
+        shell: bash
+        run: |
+          set -euo pipefail
+          PAGE="https://parkminhyun0.github.io/bible-atlas/cesium.html?verify=${GITHUB_SHA}"
+          IMAGE="https://parkminhyun0.github.io/bible-atlas/assets/bibleatlas-og-v1.jpg?verify=${GITHUB_SHA}"
+
+          echo "Waiting for the deployed SHA to be visible at the public URL..."
+          ready=0
+          for attempt in $(seq 1 18); do
+            code=$(curl -sS -L -A 'facebookexternalhit/1.1' -o /tmp/bibleatlas-page.html -w '%{http_code}' "$PAGE" || true)
+            if [[ "$code" == "200" ]] && grep -Fq 'bibleatlas-og-v1.jpg' /tmp/bibleatlas-page.html; then
+              ready=1
+              echo "Public page ready on attempt ${attempt}."
+              break
+            fi
+            echo "Attempt ${attempt}: HTTP ${code}; metadata not ready yet."
+            sleep 5
+          done
+          [[ "$ready" == "1" ]]
+
+          echo "--- OG tags seen by crawler ---"
+          grep -E '<meta property="og:|<meta name="twitter:' /tmp/bibleatlas-page.html
+
+          echo "--- Page response by crawler UA ---"
+          for ua in 'facebookexternalhit/1.1' 'Twitterbot/1.0' 'LinkedInBot/1.0' 'Mozilla/5.0'; do
+            echo "USER-AGENT: ${ua}"
+            curl -sS -L -D /tmp/page.headers -o /tmp/page.body -A "$ua" "$PAGE"
+            awk 'BEGIN{IGNORECASE=1} /^HTTP\/|^content-type:|^content-length:|^cache-control:|^etag:|^x-robots-tag:/ {print}' /tmp/page.headers
+            grep -Fq '<meta property="og:image" content="https://parkminhyun0.github.io/bible-atlas/assets/bibleatlas-og-v1.jpg">' /tmp/page.body
+          done
+
+          echo "--- Image response ---"
+          curl -sS -L -D /tmp/image.headers -o /tmp/og.jpg -A 'facebookexternalhit/1.1' "$IMAGE"
+          awk 'BEGIN{IGNORECASE=1} /^HTTP\/|^content-type:|^content-length:|^cache-control:|^etag:|^x-robots-tag:/ {print}' /tmp/image.headers
+          test "$(wc -c < /tmp/og.jpg)" -gt 10000
+          file /tmp/og.jpg
+          file /tmp/og.jpg | grep -Eq 'JPEG image data.*1200x630|JPEG image data.*1200 x 630'
