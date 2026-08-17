@@ -11,7 +11,7 @@ function addBuildings(){
     paint:{ 'fill-extrusion-color':['get','c'],
             'fill-extrusion-base':['get','b'],
             'fill-extrusion-height':['get','h'],
-            'fill-extrusion-opacity':0.95 } });
+            'fill-extrusion-opacity':1 } });
 }
 map.on('load', addBuildings);
 /* v12 수정: bindToggle은 v11 트리 패널 재설계에서 제거된 함수 — 잔존 호출 삭제 (건축 토글은 treeBld 체크박스가 담당) */

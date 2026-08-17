@@ -30,7 +30,9 @@ window.BibleAtlasBuildings = (function () {
           heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
           extrudedHeight: top,
           extrudedHeightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
-          material: Cesium.Color.fromCssColorString(x.c || '#c9b995').withAlpha(0.96),
+          /* 불투명하게 그린다. 알파가 1 미만이면 벽 너머 안쪽 구조가 비쳐 보여
+             건물이 유리 상자처럼 된다. 성전은 외형만 보이면 된다. */
+          material: Cesium.Color.fromCssColorString(x.c || '#c9b995'),
           outline: true,
           outlineColor: Cesium.Color.fromCssColorString('#3b3020').withAlpha(0.55),
           shadows: Cesium.ShadowMode.ENABLED,   // 태양 위치에 따라 그림자를 드리운다
