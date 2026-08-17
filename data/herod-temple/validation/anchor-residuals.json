@@ -1,0 +1,73 @@
+{
+  "residuals": [
+    {
+      "id": "hulda_double",
+      "name": "훌다 이중문",
+      "grade": "A",
+      "sigma_m": 5,
+      "role": "check",
+      "dE_m": -32.99,
+      "dN_m": -1.76,
+      "residual_m": 33.04,
+      "note": "OSM 이중문↔삼중문 간격이 67 m 인데 모델·발굴 도면은 86 m 다. OSM 점 정밀도가 낮아 검사용"
+    },
+    {
+      "id": "wilson",
+      "name": "윌슨 아치 (사슬문 아래)",
+      "grade": "A",
+      "sigma_m": 8,
+      "role": "check",
+      "dE_m": 13.09,
+      "dN_m": -23.63,
+      "residual_m": 27.02,
+      "note": "OSM 점은 지상의 사슬문이고 윌슨 아치는 그 아래다. 대응이 느슨해 검사용으로만 쓴다"
+    },
+    {
+      "id": "hulda_triple",
+      "name": "훌다 삼중문",
+      "grade": "A",
+      "sigma_m": 5,
+      "role": "check",
+      "dE_m": -14.02,
+      "dN_m": -2.43,
+      "residual_m": 14.23,
+      "note": "위와 같은 이유로 검사용"
+    },
+    {
+      "id": "robinson",
+      "name": "로빈슨 아치",
+      "grade": "A",
+      "sigma_m": 5,
+      "role": "control",
+      "dE_m": 4.24,
+      "dN_m": 1.04,
+      "residual_m": 4.36,
+      "note": "서벽, 남서 모서리에서 북으로 12 m (GATES.robinson)"
+    },
+    {
+      "id": "sw_corner",
+      "name": "남서 모서리 (나팔 부는 곳 비문 출토)",
+      "grade": "A",
+      "sigma_m": 6,
+      "role": "control",
+      "dE_m": -2.67,
+      "dN_m": -0.83,
+      "residual_m": 2.79,
+      "note": "모델의 로빈슨 아치 간격(12 m)과 OSM 실측(13.1 m)이 1 m 안에서 맞아, 이 점은 모서리에 가깝다"
+    },
+    {
+      "id": "east_seam",
+      "name": "동벽 이음매 (straight joint)",
+      "grade": "A",
+      "sigma_m": 6,
+      "role": "control",
+      "dE_m": -1.57,
+      "dN_m": -0.21,
+      "residual_m": 1.58,
+      "note": "남동 모서리에서 북으로 약 32 m. 헤롯 확장부와 그 이전 벽의 경계"
+    }
+  ],
+  "rms_horizontal_m": 3.125,
+  "max_residual_m": 4.36,
+  "status": "alignment-provisional"
+}
