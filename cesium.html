@@ -375,6 +375,8 @@ let viewer, layerCounts = {};
 
     const scene = viewer.scene;
     scene.globe.enableLighting = true;        // 태양 위치에 따른 지형 명암
+    // 클리핑된 현대 지형이 보이지 않는 그림자를 성전 모델 위에 남기지 않게 한다.
+    scene.globe.shadows = Cesium.ShadowMode.RECEIVE_ONLY;
     scene.globe.depthTestAgainstTerrain = true;
     scene.skyAtmosphere.show = true;
     scene.fog.enabled = true;
