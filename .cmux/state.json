@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 1,
+  "revision": 7,
+  "project": "parkminhyun0/bible-atlas",
+  "task": {
+    "id": "cmux-model-neutral-work-os",
+    "title": "CMUX Model-Neutral Work OS bootstrap",
+    "status": "active"
+  },
+  "git": {
+    "branch": "system/cmux-model-neutral-work-os",
+    "baseBranch": "main",
+    "headAtWrite": "acca182fcaf95f4136267c3be585bd0eed7352ec"
+  },
+  "executor": {
+    "provider": "openai",
+    "model": "codex",
+    "session": null
+  },
+  "phase": "review",
+  "completedSteps": [
+    {
+      "id": "state-contract-implementation",
+      "completedAt": "2026-08-18T17:11:38.923Z",
+      "evidenceIds": [
+        "ev-3a023660d6e4",
+        "ev-035fc0064b70",
+        "ev-8fa470d38a9f"
+      ]
+    },
+    {
+      "id": "state-contract-hardening",
+      "completedAt": "2026-08-18T17:16:58.759Z",
+      "evidenceIds": [
+        "ev-803b9c38ce7c",
+        "ev-cc23250147ad",
+        "ev-9ad1f899177e"
+      ]
+    }
+  ],
+  "nextStep": "Maintainer reviews and manually merges the system-manual PR",
+  "evidence": [
+    {
+      "id": "ev-3a023660d6e4",
+      "kind": "file",
+      "value": ".cmux/state.schema.json",
+      "sha256": "c20471e0153c804d37916dc8ae524e678ce4eca2a76d8b3a8434fbf548d8d9cb",
+      "recordedAt": "2026-08-18T17:11:10.490Z",
+      "supersededAt": "2026-08-19T00:00:00.000Z",
+      "replacedBy": "ev-803b9c38ce7c"
+    },
+    {
+      "id": "ev-035fc0064b70",
+      "kind": "file",
+      "value": "tools/cmux-state.mjs",
+      "sha256": "1d55037eef74bbe6a5fc49ceb3e8396911afb3f7c5536b6f731bf7f8b0a7a9fc",
+      "recordedAt": "2026-08-18T17:11:23.181Z",
+      "supersededAt": "2026-08-19T00:00:00.000Z",
+      "replacedBy": "ev-cc23250147ad"
+    },
+    {
+      "id": "ev-8fa470d38a9f",
+      "kind": "file",
+      "value": "tools/test-cmux-state.mjs",
+      "sha256": "b8cb0f88d2bf1d6c41dd33642e608e4fa7d07b4642b8731ff6de96d6fb057f6c",
+      "recordedAt": "2026-08-18T17:11:23.225Z",
+      "supersededAt": "2026-08-19T00:00:00.000Z",
+      "replacedBy": "ev-9ad1f899177e"
+    },
+    {
+      "id": "ev-803b9c38ce7c",
+      "kind": "file",
+      "value": ".cmux/state.schema.json",
+      "sha256": "9caafbddd20520a5abeb4dd07a15c0e7991808533c3ccc819b215520347ead40",
+      "recordedAt": "2026-08-19T00:00:00.000Z"
+    },
+    {
+      "id": "ev-cc23250147ad",
+      "kind": "file",
+      "value": "tools/cmux-state.mjs",
+      "sha256": "be1fb5a8967760104518981bc0a910f1e8e73ff91f1117bc7a44b9f46dce3265",
+      "recordedAt": "2026-08-19T00:00:00.000Z"
+    },
+    {
+      "id": "ev-9ad1f899177e",
+      "kind": "file",
+      "value": "tools/test-cmux-state.mjs",
+      "sha256": "d323e43030dbeb7e30a27536ee7bd5af9388f8ab8e385991ce5a79b6ca6ea786",
+      "recordedAt": "2026-08-19T00:00:00.000Z"
+    }
+  ],
+  "gates": [
+    {
+      "id": "state-contract-valid",
+      "required": true,
+      "authority": "automated",
+      "status": "pass",
+      "evidenceIds": [
+        "ev-3a023660d6e4",
+        "ev-035fc0064b70",
+        "ev-8fa470d38a9f"
+      ],
+      "decision": {
+        "actor": "tools/test-cmux-state.mjs",
+        "at": "2026-08-18T17:11:38.000Z"
+      }
+    },
+    {
+      "id": "maintainer-review",
+      "required": true,
+      "authority": "human",
+      "status": "pending",
+      "evidenceIds": [],
+      "decision": null
+    },
+    {
+      "id": "state-contract-hardening",
+      "required": true,
+      "authority": "automated",
+      "status": "pass",
+      "evidenceIds": [
+        "ev-803b9c38ce7c",
+        "ev-cc23250147ad",
+        "ev-9ad1f899177e"
+      ],
+      "decision": {
+        "actor": "tools/test-cmux-state.mjs",
+        "at": "2026-08-18T17:16:58.712Z"
+      }
+    }
+  ],
+  "blockers": [],
+  "handoff": {
+    "ready": false,
+    "reason": null,
+    "requestedAt": null,
+    "history": []
+  },
+  "lease": {
+    "owner": "openai/codex",
+    "heartbeatAt": "2026-08-18T17:16:58.759Z",
+    "ttlMinutes": 120
+  },
+  "updatedAt": "2026-08-18T17:16:58.759Z"
+}
