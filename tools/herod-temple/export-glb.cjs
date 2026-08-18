@@ -29,6 +29,13 @@ const OUT = arg('--out', path.join(ROOT, 'assets/herod-temple/ad30/lod1.glb'));
    지형은 Cesium 의 실제 DEM 이 담당하고, 군중은 라이선스·성능 문제를 따로 검토한다. */
 const LAYERS = arg('--layers', 'base,sanct,roofs,interior').split(',');
 
+/* 뺄 재질 — 상류 렌더러가 쓰던 보조 요소다. Cesium 에서는 해가 되므로 버린다.
+     shadow  바닥에 깔아 둔 '가짜 그림자' 판. Cesium 은 실제 그림자를 계산하므로
+             이게 남으면 포장면에 검은 얼룩으로 겹쳐 보인다(실측 확인).
+     marker  디버그용 표식
+     fire    번제단 불꽃 — 정지된 판이라 3D 로는 어색하다 */
+const DROP_MATERIALS = arg('--drop-materials', 'shadow,marker,fire').split(',').filter(Boolean);
+
 /* ── 재질 → PBR ────────────────────────────────────────────────────
    색·거칠기는 data/herod-temple/spec/temple_spec.json 의 materials 를 기준으로 하고,
    그 표에 없는 것은 같은 계열로 채운다. 텍스처는 아직 넣지 않는다(기획서 §7 P2). */
@@ -117,7 +124,7 @@ function main(){
     return gltf.materials.length - 1;
   };
 
-  const used = scene.draws.filter(d => LAYERS.includes(d.layer));
+  const used = scene.draws.filter(d => LAYERS.includes(d.layer) && !DROP_MATERIALS.includes(d.mat));
   const byLayer = new Map();
   used.forEach(d => { if (!byLayer.has(d.layer)) byLayer.set(d.layer, []); byLayer.get(d.layer).push(d); });
 
@@ -198,6 +205,7 @@ function main(){
   console.log('\n■ GLB 내보내기 완료');
   console.log('  파일       ', path.relative(ROOT, OUT));
   console.log('  레이어     ', [...byLayer.keys()].join(', '));
+  console.log('  뺀 재질    ', DROP_MATERIALS.join(', ') || '(없음)');
   console.log('  삼각형     ', Math.round(tris).toLocaleString(), '· 정점', verts.toLocaleString());
   console.log('  재질       ', gltf.materials.length, '개 —', gltf.materials.map(m => m.name).join(', '));
   console.log('  크기       ', mb(fs.statSync(OUT).size), '(JSON', mb(json.length) + ', BIN', mb(binOut.length) + ')');
