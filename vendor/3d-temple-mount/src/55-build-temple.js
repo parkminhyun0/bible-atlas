@@ -131,7 +131,7 @@ function buildSoregAndChel(B){
               [(X0+X1)/2,   (iZ1+Z1)/2,  X1-X0,    Z1-iZ1],
               [(X0+iX0)/2,  (iZ0+iZ1)/2, iX0-X0,   iZ1-iZ0],
               [(iX1+X1)/2,  (iZ0+iZ1)/2, X1-iX1,   iZ1-iZ0]])
-          B.box('paving','base',{x:bx, z:bz, y:ESP, sx:bsx, sy, sz:bsz,
+          B.box('paving','stairsChel',{x:bx, z:bz, y:ESP, sx:bsx, sy, sz:bsz,
                                  uv:0.7, ao:sh, aoTop:lerp(0.86,1,k/(n-1)),
                                  skip:'B'});
       }
@@ -215,10 +215,14 @@ function buildCourtWalls(B){
       for(const sd of [-1,1]){
         const cxx = aX ? gx + sd*(ow/2 - lw/2) : gx + th*0.26;
         const czz = aX ? gz + th*0.26 : gz + sd*(ow/2 - lw/2);
-        B.box('gold','base',{x:cxx,z:czz,y:yDoor+0.05,
+        /* Each leaf gets its own layer so the walkthrough can slide only the
+           approached gate open. The coordinates and dimensions remain the
+           same; this changes export grouping, not the reconstruction. */
+        const doorLayer=`doorCourt_${aX?'x':'z'}_${sd<0?'m':'p'}_${gx.toFixed(3)}_${gz.toFixed(3)}`;
+        B.box('gold',doorLayer,{x:cxx,z:czz,y:yDoor+0.05,
           sx: aX ? lw : lt, sy: dh*0.97, sz: aX ? lt : lw, uv:0.7, ao:1});
         for(let k=1;k<=4;k++)                 // rails, so a tall leaf reads
-          B.box('gold','base',{x:cxx,z:czz,y:yDoor+dh*0.97*k/5-0.18,
+          B.box('gold',doorLayer,{x:cxx,z:czz,y:yDoor+dh*0.97*k/5-0.18,
             sx: aX ? lw-0.35 : lt+0.16, sy:0.36,
             sz: aX ? lt+0.16 : lw-0.35, uv:1.6, ao:1});
       }
@@ -889,9 +893,11 @@ function buildSanctuary(B){
         sy:yT-yF-cu(20), sz:cu(10), uv:1/9.6, ao:1, grad:0.1});
       /* its four doors, two outer and two inner, plated with gold */
       for(const s of [-1,1]){
-        B.box('gold','sanct',{x:de-0.3, z:AXIS+s*cu(2.4), y:yF, sx:0.4,
+        B.box('gold',`doorHekhal_z_${s<0?'m':'p'}_outer`,{
+          x:de-0.3, z:AXIS+s*cu(2.4), y:yF, sx:0.4,
           sy:cu(19.4), sz:cu(4.6), uv:0.6, ao:1});
-        B.box('gold','sanct',{x:dw+0.3, z:AXIS+s*cu(2.4), y:yF, sx:0.4,
+        B.box('gold',`doorHekhal_z_${s<0?'m':'p'}_inner`,{
+          x:dw+0.3, z:AXIS+s*cu(2.4), y:yF, sx:0.4,
           sy:cu(19.4), sz:cu(4.6), uv:0.6, ao:1});
       }
       /* THE BABYLONIAN VEIL, and this is where it belongs. Josephus: the
@@ -902,7 +908,7 @@ function buildSanctuary(B){
          doors, and is seen from outside through the open porch archway. It is
          sized to the doorway, as Josephus says: 20 x 10 cubits by Middot 4:1,
          which Josephus gives instead as 55 x 16. */
-      B.box('veil','sanct',{x:de+0.28, z:AXIS, y:yF, sx:0.13,
+      B.box('veil','veilOuter',{x:de+0.28, z:AXIS, y:yF, sx:0.13,
         sy:cu(20.6), sz:cu(10.6), uv:0.14, ao:1, grad:0.22});
 
       /* a string course marking the head of the cells at forty cubits,
@@ -1040,9 +1046,9 @@ function buildSanctuary(B){
     /* --- the Holy of Holies, and the two veils one cubit apart --- */
     B.part('debir',{name:INFO.debir.n, key:'debir',
                     atLocal:[cu(100), yF+cu(14), AXIS]},()=>{
-      B.box('veil','sanct',{x:cu(H.traksin.e)-0.09, z:AXIS, y:yF, sx:0.12,
+      B.box('veil','veilDebirEast',{x:cu(H.traksin.e)-0.09, z:AXIS, y:yF, sx:0.12,
         sy:cu(40)-0.7, sz:hekZ1-hekZ0, uv:0.1, ao:1, grad:0.3});
-      B.box('veil','sanct',{x:cu(H.traksin.w)+0.09, z:AXIS, y:yF, sx:0.12,
+      B.box('veil','veilDebirWest',{x:cu(H.traksin.w)+0.09, z:AXIS, y:yF, sx:0.12,
         sy:cu(40)-0.7, sz:hekZ1-hekZ0, uv:0.1, ao:1, grad:0.3});
       /* the floor of the innermost room, and nothing standing on it */
       B.poly('cedar','sanct',[[cu(H.debir.w),hekZ0],[cu(H.debir.e),hekZ0],

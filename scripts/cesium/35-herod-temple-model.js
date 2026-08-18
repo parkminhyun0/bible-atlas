@@ -28,7 +28,7 @@ window.BibleAtlasTempleModel = (function () {
     model_south_axis_azimuth_deg: 172.26,
   };
   /* GLB 도 같은 이유로 버전을 붙인다. 모델을 다시 구우면 이 값을 올린다. */
-  const GLB_VERSION = '20260819b';
+  const GLB_VERSION = '20260819c';
   const GLB_URL = './assets/herod-temple/ad30/lod1.glb?v=' + GLB_VERSION;
   const ALIGN_URL = './data/herod-temple/spec/world_alignment.json';
 
