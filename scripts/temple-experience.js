@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
-const MODEL_URL = './assets/herod-temple/ad30/lod1.glb?v=20260819b';
+const MODEL_URL = './assets/herod-temple/ad30/lod1.glb?v=20260819c';
 const EYE_HEIGHT = 1.68;
 const MOVE_SPEED = 7;
 const COLLISION_RADIUS = 0.55;
@@ -45,6 +45,8 @@ const controls = new PointerLockControls(camera, renderer.domElement);
 scene.add(camera);
 const keys = new Set();
 const collisionMeshes = [];
+const interactiveDoors = [];
+const registeredInteractiveNodes = new Set();
 const raycaster = new THREE.Raycaster();
 const down = new THREE.Vector3(0,-1,0);
 const forward = new THREE.Vector3();
@@ -55,6 +57,8 @@ let bounds = null;
 let selectedSpawn = 'outside';
 let verticalVelocity = 0;
 let grounded = false;
+let lastSafePosition = null;
+let debirNoticeShown = false;
 
 function setStatus(message){ statusText.textContent = message; }
 function returnToAtlas(){
@@ -138,6 +142,32 @@ function applySpawn(){
   camera.lookAt(target);
   verticalVelocity = 0;
   grounded = true;
+  lastSafePosition = camera.position.clone();
+}
+
+function registerInteractiveNode(object){
+  let owner = object;
+  while (owner && !/^(stairsChel|door|veil)/.test(owner.name || '')) owner = owner.parent;
+  if (!owner) return;
+  const name = owner.name;
+  if (name === 'stairsChel') {
+    const mats = Array.isArray(object.material) ? object.material : [object.material];
+    mats.forEach(mat => { if (mat) { mat.side = THREE.DoubleSide; mat.needsUpdate = true; } });
+  }
+  if (!name.startsWith('door') && !name.startsWith('veil')) return;
+  if (registeredInteractiveNodes.has(owner)) return;
+  registeredInteractiveNodes.add(owner);
+  const box = new THREE.Box3().setFromObject(owner);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  let axis = 'y', sign = 1, travel = size.y + 0.4;
+  if (name.startsWith('door')) {
+    const bits = name.split('_');
+    axis = bits[1];
+    sign = bits[2] === 'm' ? -1 : 1;
+    travel = (axis === 'x' ? size.x : size.z) * 0.94;
+  }
+  interactiveDoors.push({object:owner,name,center,axis,sign,travel,amount:0,closed:owner.position.clone()});
 }
 
 new GLTFLoader().load(MODEL_URL, gltf => {
@@ -152,6 +182,7 @@ new GLTFLoader().load(MODEL_URL, gltf => {
        전체 DoubleSide는 그 면을 가시 모양 파편으로 노출하므로 원본과 동일하게
        앞면만 렌더한다. 내부에서 보이지 않는 곳은 추후 실제 내벽 메시로 보강한다. */
     mats.forEach(mat => { if (mat) { mat.side = THREE.FrontSide; mat.needsUpdate = true; } });
+    registerInteractiveNode(object);
   });
   bounds = new THREE.Box3().setFromObject(model);
   applySpawn();
@@ -169,6 +200,20 @@ new GLTFLoader().load(MODEL_URL, gltf => {
 });
 
 const clock = new THREE.Clock();
+function updateDoors(dt){
+  for (const door of interactiveDoors) {
+    const distance = Math.hypot(camera.position.x-door.center.x, camera.position.z-door.center.z);
+    const target = distance < 7.5 ? 1 : 0;
+    if (target && door.name.startsWith('veilDebir') && !debirNoticeShown) {
+      debirNoticeShown = true;
+      setStatus('지성소 · AD 30에는 기반석 외 성물이 없었습니다');
+    }
+    door.amount = THREE.MathUtils.damp(door.amount, target, 6, dt);
+    door.object.position.copy(door.closed);
+    door.object.position[door.axis] += door.sign * door.travel * door.amount;
+    door.object.updateMatrixWorld(true);
+  }
+}
 function updateMovement(dt){
   if (!controls.isLocked || !modelReady) return;
   camera.getWorldDirection(forward);
@@ -218,15 +263,24 @@ function updateMovement(dt){
         grounded = true;
       }
     }
+    if (grounded) lastSafePosition = camera.position.clone();
   } else {
-    verticalVelocity -= GRAVITY * frameDt;
-    camera.position.y += verticalVelocity * frameDt;
+    /* 역사 지형 메시의 유효 경계 밖에는 바닥이 없다. 추락시키지 않고 마지막
+       검증된 보행 지점으로 즉시 되돌려 체험 영역 경계를 명확히 한다. */
+    if (lastSafePosition) {
+      camera.position.copy(lastSafePosition);
+      verticalVelocity = 0;
+      grounded = true;
+      setStatus('체험 영역의 경계입니다 · 안전한 위치로 돌아왔습니다');
+    }
   }
 }
 
 function animate(){
   requestAnimationFrame(animate);
-  updateMovement(clock.getDelta());
+  const dt = clock.getDelta();
+  updateDoors(dt);
+  updateMovement(dt);
   renderer.render(scene, camera);
 }
 animate();

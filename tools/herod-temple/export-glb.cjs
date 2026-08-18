@@ -195,8 +195,10 @@ function main(){
     return gltf.materials.length - 1;
   };
 
+  const interactiveLayer = layer => layer === 'stairsChel' || layer.startsWith('door') || layer.startsWith('veil');
   const used = scene.draws.filter(d =>
-    (LAYERS.includes(d.layer) || (INCLUDE_HISTORIC_TERRAIN && d.layer === 'city' && d.mat === 'terrain')) &&
+    (LAYERS.includes(d.layer) || interactiveLayer(d.layer) ||
+     (INCLUDE_HISTORIC_TERRAIN && d.layer === 'city' && d.mat === 'terrain')) &&
     !DROP_MATERIALS.includes(d.mat));
   const byLayer = new Map();
   used.forEach(d => { if (!byLayer.has(d.layer)) byLayer.set(d.layer, []); byLayer.get(d.layer).push(d); });
