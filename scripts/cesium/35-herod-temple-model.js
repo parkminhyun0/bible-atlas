@@ -14,7 +14,8 @@
    수평: RMS 3.1 m. 기획서 목표(1 m)는 측량 등급 좌표를 전제하는데, 현재 앵커는
          OSM 점이라 자체 정밀도가 수 m 다. 그래서 상태는 alignment-provisional.
    수직: 역사 기준면을 아직 확정하지 못했다. 당분간 현대 지형에서 이방인의 뜰
-         높이를 표본해 얹는다. 기획서 §5 의 terrain clipping 은 다음 단계다.
+         높이를 표본해 얹는다. 성전 주변은 vendor groundLevel() 역사 지형을
+         함께 렌더하고, 같은 영역의 현대 DEM을 클리핑한다.
    ================================================================= */
 'use strict';
 
@@ -27,7 +28,7 @@ window.BibleAtlasTempleModel = (function () {
     model_south_axis_azimuth_deg: 172.26,
   };
   /* GLB 도 같은 이유로 버전을 붙인다. 모델을 다시 구우면 이 값을 올린다. */
-  const GLB_VERSION = '20260819a';
+  const GLB_VERSION = '20260819b';
   const GLB_URL = './assets/herod-temple/ad30/lod1.glb?v=' + GLB_VERSION;
   const ALIGN_URL = './data/herod-temple/spec/world_alignment.json';
 
@@ -85,7 +86,9 @@ window.BibleAtlasTempleModel = (function () {
         scale: 1.0,                       // 축척은 절대 건드리지 않는다(기획서 §4.3)
         upAxis: Cesium.Axis.Y,            // 빌더 프레임: Y 가 위
         forwardAxis: Cesium.Axis.X,       // 숨은 90° 회전을 없앤다 (위 주석 참조)
-        shadows: Cesium.ShadowMode.ENABLED,
+        // 스크린샷에서 포장면을 덮은 검은 얼룩은 모델의 강한 투영 그림자였다.
+        // 모델은 빛을 받되 포장면에 진한 그림자를 다시 투영하지 않는다.
+        shadows: Cesium.ShadowMode.RECEIVE_ONLY,
         backFaceCulling: true,
         // 정점에 구워진 음영(COLOR_0)이 살아 있도록 기본 조명만 쓴다
         imageBasedLighting: undefined,
@@ -134,13 +137,26 @@ window.BibleAtlasTempleModel = (function () {
     });
   }
 
+  /* export-glb.cjs 의 검증된 로컬 bounds와 같은 영역. vendor groundLevel()
+     역사 지형이 외곽 옹벽·계단·접속부 아래를 채우므로, 이 직사각형 안의
+     현대 DEM만 잘라 두 지표면이 충돌하지 않게 한다. */
+  function historicTerrainFootprint(){
+    /* GLB 역사 지형은 [-66,372]×[-108,606] m 직사각형으로 정확히
+       생성된다. 경계 이음새를 숨기는 1 m 지형 여유만 남기고 내부의
+       현대 DEM을 잘라 위성 지형과 역사 지형이 섞이지 않게 한다. */
+    return [[-65, -107], [371, -107], [371, 605], [-65, 605]].map(([x, z]) => {
+      const c = Cesium.Cartographic.fromCartesian(localToCartesian(x, 0, z));
+      return [Cesium.Math.toDegrees(c.longitude), Cesium.Math.toDegrees(c.latitude)];
+    });
+  }
+
   let clipping = null;
   function applyTerrainClipping(on){
     if (!viewer || !align) return false;
     if (typeof Cesium.ClippingPolygonCollection === 'undefined') return false;  // 구버전 대비
     if (!on){ if (clipping) clipping.enabled = false; return true; }
     if (!clipping){
-      const ring = templeFootprint();
+      const ring = historicTerrainFootprint();
       clipping = new Cesium.ClippingPolygonCollection({
         polygons: [ new Cesium.ClippingPolygon({
           positions: Cesium.Cartesian3.fromDegreesArray(ring.flat()) }) ],
@@ -208,6 +224,6 @@ window.BibleAtlasTempleModel = (function () {
   }
 
   return { load, setVisible, isLoaded, alignment, flyTo, hideLegacyTemple,
-           applyTerrainClipping, templeFootprint,
+           applyTerrainClipping, templeFootprint, historicTerrainFootprint,
            get model(){ return model; } };
 })();
