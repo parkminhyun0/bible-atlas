@@ -29,9 +29,12 @@ const OUT = arg('--out', path.join(ROOT, 'assets/herod-temple/ad30/lod1.glb'));
 const TEX_DIR = arg('--textures', path.join(ROOT, 'assets/herod-temple/ad30/textures'));
 const USE_TEX = !argv.includes('--no-textures');
 
-/* 담을 레이어 — 주변 현대 지형(city)과 군중(people), 디버그용(grid/overlay/nodraw)은 뺀다.
-   지형은 Cesium 의 실제 DEM 이 담당하고, 군중은 라이선스·성능 문제를 따로 검토한다. */
+/* 담을 건축 레이어. city 전체(도시 구조물)는 빼지만, 외곽 구조물이
+   공중에 뜨지 않도록 vendor 가 재구성한 1세기 지표면(city/terrain)은 별도로
+   포함한다. 이 지표면은 groundLevel() 데이터를 그대로 사용하며 새 고도를
+   발명하지 않는다. --no-historic-terrain 으로만 끈다. */
 const LAYERS = arg('--layers', 'base,sanct,roofs,interior').split(',');
+const INCLUDE_HISTORIC_TERRAIN = !argv.includes('--no-historic-terrain');
 
 /* 뺄 재질 — 상류 렌더러가 쓰던 보조 요소다. Cesium 에서는 해가 되므로 버린다.
      shadow  바닥에 깔아 둔 '가짜 그림자' 판. Cesium 은 실제 그림자를 계산하므로
@@ -49,6 +52,15 @@ const DROP_MATERIALS = arg('--drop-materials', 'shadow,marker,fire').split(',').
    단계(기획서 §5.2)에서 되살린다. */
 const B = arg('--bounds', '-16,322,-58,556').split(',').map(Number);
 const BOUNDS = { x0:B[0], x1:B[1], z0:B[2], z1:B[3] };
+/* 성전 주변 1세기 지형 메시. 고도는 vendor groundLevel() 에서만 읽고,
+   범위는 구조물 bounds 밖 50 m까지 둔다. 기존 2.7 km 메시를 삼각형
+   무게중심으로 자르면 경계에 빈 틈이 남으므로, 아래 buildScene()에서
+   이 정확한 범위의 메시를 처음부터 생성한다. */
+const TERRAIN_MARGIN_M = 50;
+const TERRAIN_BOUNDS = {
+  x0:BOUNDS.x0-TERRAIN_MARGIN_M, x1:BOUNDS.x1+TERRAIN_MARGIN_M,
+  z0:BOUNDS.z0-TERRAIN_MARGIN_M, z1:BOUNDS.z1+TERRAIN_MARGIN_M,
+};
 
 /* ── 재질 → PBR ────────────────────────────────────────────────────
    색·거칠기는 data/herod-temple/spec/temple_spec.json 의 materials 를 기준으로 하고,
@@ -62,7 +74,8 @@ const MAT = {
   paving:      { c:[0.788,0.749,0.667], r:0.90, m:0 },
   plaster:     { c:[0.929,0.910,0.859], r:0.95, m:0 },
   rock:        { c:[0.702,0.659,0.576], r:1.00, m:0 },
-  gold:        { c:[0.831,0.686,0.216], r:0.25, m:1 },   // 금판
+  gold:        { c:[0.831,0.686,0.216], r:0.18, m:1,
+                 e:[0.55,0.34,0.045] },                  // 금판: 해 아래 금속 반사를 잃지 않게 보조발광
   bronze:      { c:[0.549,0.420,0.243], r:0.40, m:1 },   // 고린도 청동
   cedar:       { c:[0.545,0.353,0.169], r:0.70, m:0 },
   roof:        { c:[0.545,0.353,0.169], r:0.70, m:0 },
@@ -100,7 +113,15 @@ function buildScene(){
                 document:{ createElement(){ throw new Error('no canvas needed'); } },
                 performance:{ now:()=>0 }, navigator:{} };
   vm.createContext(ctx);
-  vm.runInContext(code + '\n;globalThis.__scene = buildScene();' +
+  const terrainOverride = INCLUDE_HISTORIC_TERRAIN ? `
+    buildTerrain = function(B){
+      B.terrain('terrain','city',{
+        x0:${TERRAIN_BOUNDS.x0}, x1:${TERRAIN_BOUNDS.x1},
+        z0:${TERRAIN_BOUNDS.z0}, z1:${TERRAIN_BOUNDS.z1},
+        nx:72, nz:112, uv:1/57, fn:(x,z)=>groundLevel(x,z)
+      });
+    };` : '';
+  vm.runInContext(code + terrainOverride + '\n;globalThis.__scene = buildScene();' +
                   'globalThis.__X = { CUBIT, PLAT, LEV };', ctx);
   return { scene: ctx.__scene, X: ctx.__X };
 }
@@ -138,9 +159,11 @@ function main(){
   function textureFor(name){
     if (!USE_TEX) return null;
     if (texIndex.has(name)) return texIndex.get(name);
+    /* 역사 지형은 vendor bedrock 절차 텍스처를 공유한다. */
+    const textureName = name === 'terrain' ? 'rock' : name;
     let file = null, mime = null;
     for (const [ext, m] of [['jpg', 'image/jpeg'], ['png', 'image/png']]){
-      const p = path.join(TEX_DIR, name + '.' + ext);
+      const p = path.join(TEX_DIR, textureName + '.' + ext);
       if (fs.existsSync(p)){ file = p; mime = m; break; }
     }
     if (!file){ texIndex.set(name, null); return null; }
@@ -166,12 +189,15 @@ function main(){
     } else {
       pbr.baseColorFactor = [...m.c, 1];
     }
-    gltf.materials.push({ name, pbrMetallicRoughness: pbr, doubleSided: false });
+    gltf.materials.push({ name, pbrMetallicRoughness: pbr,
+      ...(m.e ? { emissiveFactor:m.e } : {}), doubleSided: false });
     matIndex.set(name, gltf.materials.length - 1);
     return gltf.materials.length - 1;
   };
 
-  const used = scene.draws.filter(d => LAYERS.includes(d.layer) && !DROP_MATERIALS.includes(d.mat));
+  const used = scene.draws.filter(d =>
+    (LAYERS.includes(d.layer) || (INCLUDE_HISTORIC_TERRAIN && d.layer === 'city' && d.mat === 'terrain')) &&
+    !DROP_MATERIALS.includes(d.mat));
   const byLayer = new Map();
   used.forEach(d => { if (!byLayer.has(d.layer)) byLayer.set(d.layer, []); byLayer.get(d.layer).push(d); });
 
@@ -194,7 +220,10 @@ function main(){
           nor[i * 3 + k] = V[b + 3 + k];
         }
         uv[i * 2] = V[b + 6]; uv[i * 2 + 1] = V[b + 7];
-        const ao = Math.max(0, Math.min(1, V[b + 8]));
+        /* 금판에 구워진 정점 AO를 곱하면 금속이 검은 녹색 판처럼 죽는다.
+           기하 음영은 법선·PBR이 담당하고, 금 자체의 색은 보존한다. */
+        const preserveSurfaceColor = d.mat === 'gold' || d.mat === 'terrain';
+        const ao = preserveSurfaceColor ? 1 : Math.max(0, Math.min(1, V[b + 8]));
         const q = Math.round(ao * 255);
         col[i * 4] = q; col[i * 4 + 1] = q; col[i * 4 + 2] = q; col[i * 4 + 3] = 255;
       }
@@ -205,7 +234,8 @@ function main(){
         const a = I[d.start + i] - d.vstart, b2 = I[d.start + i + 1] - d.vstart, c2 = I[d.start + i + 2] - d.vstart;
         const cx = (pos[a * 3] + pos[b2 * 3] + pos[c2 * 3]) / 3;
         const cz = (pos[a * 3 + 2] + pos[b2 * 3 + 2] + pos[c2 * 3 + 2]) / 3;
-        if (cx < BOUNDS.x0 || cx > BOUNDS.x1 || cz < BOUNDS.z0 || cz > BOUNDS.z1){ dropped += 3; continue; }
+        const clipBounds = d.mat === 'terrain' ? TERRAIN_BOUNDS : BOUNDS;
+        if (cx < clipBounds.x0 || cx > clipBounds.x1 || cz < clipBounds.z0 || cz > clipBounds.z1){ dropped += 3; continue; }
         keep.push(a, b2, c2);
       }
       if (!keep.length) continue;

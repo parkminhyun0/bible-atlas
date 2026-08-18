@@ -315,7 +315,7 @@
 <script src="./scripts/cesium/10-layers.js?v=20260819a"></script>
 <script src="./scripts/cesium/20-section.js?v=20260819a"></script>
 <script src="./scripts/cesium/30-buildings-walk.js?v=20260819a"></script>
-<script src="./scripts/cesium/35-herod-temple-model.js?v=20260819a"></script>
+<script src="./scripts/cesium/35-herod-temple-model.js?v=20260819b"></script>
 <script src="./scripts/cesium/40-ui.js?v=20260819a"></script>
 <!-- MapLibre 판과 같은 지리 데이터를 그대로 쓴다 (좌표를 고치면 두 화면에 함께 반영) -->
 <script>
@@ -366,7 +366,7 @@ let viewer, layerCounts = {};
       selectionIndicator: false, timeline: false, animation: false,
       fullscreenButton: false,
       shadows: true,
-      terrainShadows: Cesium.ShadowMode.ENABLED,
+      terrainShadows: Cesium.ShadowMode.RECEIVE_ONLY,
     });
 
     // 키 없는 고해상도 지형 (LOD 16)
@@ -570,7 +570,9 @@ function adaptShadows(){
   const carto = Cesium.Cartographic.fromCartesian(viewer.camera.positionWC);
   const h = carto ? carto.height : 1000;
   const wantTerrain = h < 15000 && document.getElementById('chkShadow').checked;
-  viewer.terrainShadows = wantTerrain ? Cesium.ShadowMode.ENABLED : Cesium.ShadowMode.DISABLED;
+  /* ENABLED 는 ClippingPolygon 으로 숨긴 현대 DEM도 계속 그림자를
+     투영하게 한다. 지형은 모델 그림자만 받고 자체 투영은 막는다. */
+  viewer.terrainShadows = wantTerrain ? Cesium.ShadowMode.RECEIVE_ONLY : Cesium.ShadowMode.DISABLED;
   // 사거리를 카메라 고도의 6배로 — 경계가 화면 밖에 놓이게 한다
   /* 그림자맵 사거리. 넓게 잡으면 같은 해상도를 넓은 땅에 펴 쓰게 되어
      그림자가 뭉개진다 — 성전 위에서 카메라 고도 1,400 m 일 때 종전 값(고도x6=8.4 km)은
