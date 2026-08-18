@@ -26,7 +26,9 @@ window.BibleAtlasTempleModel = (function () {
     origin_lng: 35.233962,
     model_south_axis_azimuth_deg: 172.26,
   };
-  const GLB_URL = './assets/herod-temple/ad30/lod1.glb';
+  /* GLB 도 같은 이유로 버전을 붙인다. 모델을 다시 구우면 이 값을 올린다. */
+  const GLB_VERSION = '20260819a';
+  const GLB_URL = './assets/herod-temple/ad30/lod1.glb?v=' + GLB_VERSION;
   const ALIGN_URL = './data/herod-temple/spec/world_alignment.json';
 
   let viewer = null, model = null, align = null, loading = null;
