@@ -24,6 +24,10 @@ const arg = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] :
 /* 상류 소스 위치 — vendor 로 들여오기 전에는 환경변수/인자로 받는다 */
 const SRC = arg('--src', process.env.OBI_SRC || path.join(ROOT, 'vendor/3d-temple-mount/src'));
 const OUT = arg('--out', path.join(ROOT, 'assets/herod-temple/ad30/lod1.glb'));
+/* 구워 둔 절차적 텍스처 (tools/herod-temple/bake-textures.cjs 산출).
+   모델에 UV 가 이미 들어 있으므로 붙이기만 하면 된다. --no-textures 로 끌 수 있다. */
+const TEX_DIR = arg('--textures', path.join(ROOT, 'assets/herod-temple/ad30/textures'));
+const USE_TEX = !argv.includes('--no-textures');
 
 /* 담을 레이어 — 주변 현대 지형(city)과 군중(people), 디버그용(grid/overlay/nodraw)은 뺀다.
    지형은 Cesium 의 실제 DEM 이 담당하고, 군중은 라이선스·성능 문제를 따로 검토한다. */
@@ -35,6 +39,16 @@ const LAYERS = arg('--layers', 'base,sanct,roofs,interior').split(',');
      marker  디버그용 표식
      fire    번제단 불꽃 — 정지된 판이라 3D 로는 어색하다 */
 const DROP_MATERIALS = arg('--drop-materials', 'shadow,marker,fire').split(',').filter(Boolean);
+
+/* 로컬 좌표 범위로 삼각형을 걸러 낸다 (X 동 · Z 남, m).
+   대지 밖으로 멀리 뻗는 구조물 — 서쪽 윌슨 아치 둑길(-114 m), 동쪽 감람산
+   둑길(+550 m), 스트루디온 못 — 은 고대 지면 높이에 놓여 있다. 현대 지형은
+   그 자리보다 20~40 m 높아, 지도에 올리면 공중에 뜬 다리처럼 보인다.
+   대지와 그 접속부(남측 계단·로빈슨 아치·헤롯 거리)까지만 남기고 자른다.
+   자른 것들은 사료 근거가 있는 구조물이므로, 고대 지형 mesh 를 함께 넣는
+   단계(기획서 §5.2)에서 되살린다. */
+const B = arg('--bounds', '-16,322,-58,556').split(',').map(Number);
+const BOUNDS = { x0:B[0], x1:B[1], z0:B[2], z1:B[3] };
 
 /* ── 재질 → PBR ────────────────────────────────────────────────────
    색·거칠기는 data/herod-temple/spec/temple_spec.json 의 materials 를 기준으로 하고,
@@ -112,14 +126,47 @@ function main(){
                    copyright:'Geometry: openbibleinfo/3D-Temple-Mount (MIT). ' +
                              'Reconstruction after Middot, Josephus, Ritmeyer.' },
                  scene:0, scenes:[{ nodes:[] }], nodes:[], meshes:[],
-                 materials:[], accessors:[], bufferViews:[], buffers:[] };
+                 materials:[], accessors:[], bufferViews:[], buffers:[],
+                 images:[], textures:[],
+                 /* UV 가 1 을 넘어 반복되므로 양축 REPEAT, 밉맵 선형 */
+                 samplers:[{ magFilter:9729, minFilter:9987, wrapS:10497, wrapT:10497 }] };
   const matIndex = new Map();
+  const texIndex = new Map();
+
+  /* 재질 이름에 맞는 텍스처 파일이 있으면 glTF 이미지로 넣는다.
+     이미지는 GLB 안에 함께 담아 파일 하나로 유지한다(외부 요청 없음). */
+  function textureFor(name){
+    if (!USE_TEX) return null;
+    if (texIndex.has(name)) return texIndex.get(name);
+    let file = null, mime = null;
+    for (const [ext, m] of [['jpg', 'image/jpeg'], ['png', 'image/png']]){
+      const p = path.join(TEX_DIR, name + '.' + ext);
+      if (fs.existsSync(p)){ file = p; mime = m; break; }
+    }
+    if (!file){ texIndex.set(name, null); return null; }
+    const bv = pushBuffer(fs.readFileSync(file));
+    gltf.bufferViews.push({ buffer:0, byteOffset:bv.off, byteLength:bv.len });
+    gltf.images.push({ name, bufferView: gltf.bufferViews.length - 1, mimeType: mime });
+    gltf.textures.push({ source: gltf.images.length - 1, sampler: 0 });
+    const idx = gltf.textures.length - 1;
+    texIndex.set(name, idx);
+    return idx;
+  }
+
   const materialFor = (name) => {
     if (matIndex.has(name)) return matIndex.get(name);
     const m = MAT[name] || fallback;
-    gltf.materials.push({ name,
-      pbrMetallicRoughness:{ baseColorFactor:[...m.c, 1], metallicFactor:m.m, roughnessFactor:m.r },
-      doubleSided: false });
+    const tex = textureFor(name);
+    const pbr = { metallicFactor:m.m, roughnessFactor:m.r };
+    if (tex != null){
+      /* 텍스처가 있으면 baseColorFactor 는 흰색으로 둔다. 색을 두 번 곱하면
+         재질이 실제보다 어두워진다. 색은 텍스처가 이미 갖고 있다. */
+      pbr.baseColorTexture = { index: tex, texCoord: 0 };
+      pbr.baseColorFactor = [1, 1, 1, 1];
+    } else {
+      pbr.baseColorFactor = [...m.c, 1];
+    }
+    gltf.materials.push({ name, pbrMetallicRoughness: pbr, doubleSided: false });
     matIndex.set(name, gltf.materials.length - 1);
     return gltf.materials.length - 1;
   };
@@ -128,7 +175,7 @@ function main(){
   const byLayer = new Map();
   used.forEach(d => { if (!byLayer.has(d.layer)) byLayer.set(d.layer, []); byLayer.get(d.layer).push(d); });
 
-  let tris = 0, verts = 0;
+  let tris = 0, verts = 0, dropped = 0;
   for (const [layer, draws] of byLayer){
     const primitives = [];
     for (const d of draws){
@@ -151,9 +198,18 @@ function main(){
         const q = Math.round(ao * 255);
         col[i * 4] = q; col[i * 4 + 1] = q; col[i * 4 + 2] = q; col[i * 4 + 3] = 255;
       }
-      /* 인덱스는 이 구간 기준으로 다시 매긴다 */
-      const idx = new Uint32Array(d.count);
-      for (let i = 0; i < d.count; i++) idx[i] = I[d.start + i] - d.vstart;
+      /* 인덱스를 이 구간 기준으로 다시 매기면서, 범위 밖 삼각형은 버린다.
+         판정은 삼각형 무게중심으로 한다 — 경계에 걸친 면이 반쪽만 남지 않는다. */
+      const keep = [];
+      for (let i = 0; i < d.count; i += 3){
+        const a = I[d.start + i] - d.vstart, b2 = I[d.start + i + 1] - d.vstart, c2 = I[d.start + i + 2] - d.vstart;
+        const cx = (pos[a * 3] + pos[b2 * 3] + pos[c2 * 3]) / 3;
+        const cz = (pos[a * 3 + 2] + pos[b2 * 3 + 2] + pos[c2 * 3 + 2]) / 3;
+        if (cx < BOUNDS.x0 || cx > BOUNDS.x1 || cz < BOUNDS.z0 || cz > BOUNDS.z1){ dropped += 3; continue; }
+        keep.push(a, b2, c2);
+      }
+      if (!keep.length) continue;
+      const idx = Uint32Array.from(keep);
 
       const acc = (view, type, comp, count, extra) => {
         const bv = pushBuffer(view);
@@ -168,11 +224,11 @@ function main(){
       const aNor = acc(nor, 'VEC3', 5126, n, { target:34962 });
       const aUv  = acc(uv,  'VEC2', 5126, n, { target:34962 });
       const aCol = acc(col, 'VEC4', 5121, n, { target:34962, normalized:true });
-      const aIdx = acc(idx, 'SCALAR', 5125, d.count, { target:34963 });
+      const aIdx = acc(idx, 'SCALAR', 5125, idx.length, { target:34963 });
 
       primitives.push({ attributes:{ POSITION:aPos, NORMAL:aNor, TEXCOORD_0:aUv, COLOR_0:aCol },
                         indices:aIdx, material:materialFor(d.mat), mode:4 });
-      tris += d.count / 3; verts += n;
+      tris += idx.length / 3; verts += n;
     }
     gltf.meshes.push({ name:layer, primitives });
     gltf.nodes.push({ name:layer, mesh:gltf.meshes.length - 1 });
@@ -206,8 +262,10 @@ function main(){
   console.log('  파일       ', path.relative(ROOT, OUT));
   console.log('  레이어     ', [...byLayer.keys()].join(', '));
   console.log('  뺀 재질    ', DROP_MATERIALS.join(', ') || '(없음)');
+  console.log('  좌표 범위  ', 'X '+BOUNDS.x0+'~'+BOUNDS.x1+' · Z '+BOUNDS.z0+'~'+BOUNDS.z1+' m · 범위 밖으로 버린 삼각형 '+Math.round(dropped/3).toLocaleString());
   console.log('  삼각형     ', Math.round(tris).toLocaleString(), '· 정점', verts.toLocaleString());
   console.log('  재질       ', gltf.materials.length, '개 —', gltf.materials.map(m => m.name).join(', '));
+  console.log('  텍스처     ', gltf.textures.length, '개', USE_TEX ? '' : '(--no-textures)');
   console.log('  크기       ', mb(fs.statSync(OUT).size), '(JSON', mb(json.length) + ', BIN', mb(binOut.length) + ')');
   console.log('  로컬 프레임 원점 = 대지 북서 모서리 · +X 동 · +Z 남 · +Y 위 · 규빗', X.CUBIT, 'm\n');
 }
