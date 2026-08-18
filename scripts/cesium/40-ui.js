@@ -375,7 +375,17 @@
       duration: 2.0,
     });
   });
-  on('templeView', 'click', () => window.BibleAtlasCesium.flyTempleToOlivet());
+  on('templeView', 'click', () => {
+    const v = V();
+    if (!v) return;
+    const carto = Cesium.Cartographic.fromCartesian(v.camera.positionWC);
+    sessionStorage.setItem('bibleAtlas:cesiumState:v1', JSON.stringify({
+      lng:Cesium.Math.toDegrees(carto.longitude), lat:Cesium.Math.toDegrees(carto.latitude),
+      height:carto.height, heading:v.camera.heading, pitch:v.camera.pitch, roll:v.camera.roll,
+    }));
+    sessionStorage.setItem('bibleAtlas:returnUrl', window.location.href);
+    window.location.assign('./temple-experience.html');
+  });
 
   /* ── 직접 그리기: 클릭으로 점을 찍어 단면 만들기 ── */
   let drawing = false, drawPts = [], drawEntity = null, drawHandler = null;

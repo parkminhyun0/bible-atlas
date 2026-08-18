@@ -1,6 +1,20 @@
 /* ══════════════ 기본 상수 ══════════════ */
 const JERUSALEM = [35.2345, 31.7767];
 
+/* 전용 체험 페이지에서 돌아왔을 때 마지막 지도 시점을 복원한다.
+   값은 현재 MapLibre 카메라에서만 저장하며 역사 좌표·모델 정합값과 무관하다. */
+const MAP_RESUME_KEY = 'bibleAtlas:mapState:v1';
+function readMapResumeState(){
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(MAP_RESUME_KEY) || 'null');
+    sessionStorage.removeItem(MAP_RESUME_KEY);
+    if (!saved || !Array.isArray(saved.center) || saved.center.length !== 2) return null;
+    const values = [...saved.center, saved.zoom, saved.pitch, saved.bearing];
+    return values.every(Number.isFinite) ? saved : null;
+  } catch (_) { return null; }
+}
+const resumedMapState = readMapResumeState();
+
 
 
 
@@ -10,8 +24,10 @@ const JERUSALEM = [35.2345, 31.7767];
 /* ══════════════ 지도 초기화 ══════════════ */
 const map = new maplibregl.Map({
   container:'map',
-  center: JERUSALEM,
-  zoom: 11.6, pitch: 62, bearing: -18,
+  center: resumedMapState?.center || JERUSALEM,
+  zoom: resumedMapState?.zoom ?? 11.6,
+  pitch: resumedMapState?.pitch ?? 62,
+  bearing: resumedMapState?.bearing ?? -18,
   /* 지면 근접 관찰: 피치는 라이브러리 상한 85°까지 허용한다.
      줌 상한 18.5 는 실측으로 정한 값이다 — 그 이상에서는 카메라가 지형 안으로
      들어가 화면이 검게 변하고(감람산·사해·갈릴리 재현), 위성 영상도 z19 가

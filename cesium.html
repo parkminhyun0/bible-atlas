@@ -391,7 +391,7 @@ let viewer, layerCounts = {};
     layerCounts.buildings = BibleAtlasBuildings.add(viewer);
     console.log('Cesium 레이어:', layerCounts);
     setJewishHour(6);
-    flyFromOrbit();
+    if (!restoreCesiumCamera()) flyFromOrbit();
 
     setupMapLibreStyleControls();
     window.dispatchEvent(new Event('bibleatlas-cesium-ready'));
@@ -616,6 +616,23 @@ function flyFromOrbit(){
     destination: Cesium.Cartesian3.fromDegrees(35.05, 31.60, 400000),
     orientation: { heading: 0, pitch: -Cesium.Math.PI_OVER_TWO, roll: 0 },
   });
+}
+
+/* 전용 성전 체험에서 돌아온 경우에만 직전 Cesium 카메라를 한 번 복원한다. */
+function restoreCesiumCamera(){
+  try {
+    const key = 'bibleAtlas:cesiumState:v1';
+    const saved = JSON.parse(sessionStorage.getItem(key) || 'null');
+    sessionStorage.removeItem(key);
+    if (!saved) return false;
+    const values = [saved.lng,saved.lat,saved.height,saved.heading,saved.pitch,saved.roll];
+    if (!values.every(Number.isFinite)) return false;
+    viewer.camera.setView({
+      destination: Cesium.Cartesian3.fromDegrees(saved.lng, saved.lat, saved.height),
+      orientation:{heading:saved.heading,pitch:saved.pitch,roll:saved.roll},
+    });
+    return true;
+  } catch (_) { return false; }
 }
 
 function flyWide(){
