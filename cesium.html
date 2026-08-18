@@ -552,7 +552,11 @@ function adaptShadows(){
   const wantTerrain = h < 15000 && document.getElementById('chkShadow').checked;
   viewer.terrainShadows = wantTerrain ? Cesium.ShadowMode.ENABLED : Cesium.ShadowMode.DISABLED;
   // 사거리를 카메라 고도의 6배로 — 경계가 화면 밖에 놓이게 한다
-  viewer.scene.shadowMap.maximumDistance = Math.min(200000, Math.max(6000, h * 6));
+  /* 그림자맵 사거리. 넓게 잡으면 같은 해상도를 넓은 땅에 펴 쓰게 되어
+     그림자가 뭉개진다 — 성전 위에서 카메라 고도 1,400 m 일 때 종전 값(고도x6=8.4 km)은
+     텍셀당 4 m 라 건물 그림자가 커다란 얼룩으로 보였다. 사거리를 좁혀 선명하게 만든다.
+     대신 아주 먼 지형의 그림자는 사라지는데, 그 축척에서는 어차피 보이지 않는다. */
+  viewer.scene.shadowMap.maximumDistance = Math.min(200000, Math.max(1200, h * 2));
 }
 
 function updateReadout(){

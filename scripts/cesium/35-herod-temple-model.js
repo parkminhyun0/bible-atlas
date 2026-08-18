@@ -89,8 +89,10 @@ window.BibleAtlasTempleModel = (function () {
         imageBasedLighting: undefined,
       });
       model = viewer.scene.primitives.add(m);
+      applyAmbient(model);
       model.readyEvent.addEventListener(() => {
         hideLegacyTemple(true);
+        applyTerrainClipping(true);
         console.log('[헤롯 성전] 모델 로드 완료 ·', align.status,
                     align.rms != null ? `· 수평 RMS ${align.rms} m` : '');
         viewer.scene.requestRender();
@@ -98,6 +100,71 @@ window.BibleAtlasTempleModel = (function () {
       return model;
     })();
     return loading;
+  }
+
+  /* ── 현대 지형을 성전산 안쪽에서 잘라 낸다 (기획서 §5.2) ─────────────
+     현대 하람 알샤리프 상면은 고대 이방인의 뜰 포장면과 같지 않다. 실측해 보니
+     대지 안 표본 108곳 중 18곳에서 현대 지형이 고대 포장면보다 높았고, 최대
+     4.5 m 까지 솟았다. 그 부분이 포장면을 뚫고 올라와 황토색 얼룩으로 보인다.
+     그래서 대지 범위 안의 현대 지형을 잘라 내고 그 자리를 모델이 채우게 한다.
+     모델의 옹벽이 포장면 아래로 57 m 내려가므로 잘라 낸 구멍은 벽이 가린다. */
+  /* 로컬 좌표를 세계 좌표로 옮길 때는 변환식을 손으로 다시 쓰지 않는다.
+     모델이 실제로 쓰는 행렬을 그대로 쓴다. 직접 쓴 식은 부호를 틀리기 쉽고
+     (실제로 한 번 틀려서 발자국이 남쪽에서 130 m 어긋났다), 두 벌을 두면
+     한쪽만 고쳐지는 사고가 난다. */
+  function localToCartesian(x, y, z){
+    const full = Cesium.Matrix4.multiplyTransformation(
+      model.modelMatrix, Cesium.Axis.Y_UP_TO_Z_UP, new Cesium.Matrix4());
+    return Cesium.Matrix4.multiplyByPoint(full, new Cesium.Cartesian3(x, y, z), new Cesium.Cartesian3());
+  }
+
+  function templeFootprint(){
+    /* 빌더의 대지 네 모서리(로컬 X 동 · Z 남). 잘린 경계가 옹벽 밑에 숨도록
+       중심에서 바깥으로 6 m 넓힌다. */
+    const CORNERS = [[0, 0], [313.9, 26], [280, 485], [0, 485]];
+    const cx = 148.5, cz = 254.0;                    // 대략적인 대지 중심
+    const OUT = 6;
+    return CORNERS.map(([x, z]) => {
+      const L = Math.hypot(x - cx, z - cz) || 1;
+      const px = x + (x - cx) / L * OUT, pz = z + (z - cz) / L * OUT;
+      const c = Cesium.Cartographic.fromCartesian(localToCartesian(px, 0, pz));
+      return [Cesium.Math.toDegrees(c.longitude), Cesium.Math.toDegrees(c.latitude)];
+    });
+  }
+
+  let clipping = null;
+  function applyTerrainClipping(on){
+    if (!viewer || !align) return false;
+    if (typeof Cesium.ClippingPolygonCollection === 'undefined') return false;  // 구버전 대비
+    if (!on){ if (clipping) clipping.enabled = false; return true; }
+    if (!clipping){
+      const ring = templeFootprint();
+      clipping = new Cesium.ClippingPolygonCollection({
+        polygons: [ new Cesium.ClippingPolygon({
+          positions: Cesium.Cartesian3.fromDegreesArray(ring.flat()) }) ],
+      });
+      viewer.scene.globe.clippingPolygons = clipping;
+    }
+    clipping.enabled = true;
+    viewer.scene.requestRender();
+    return true;
+  }
+
+  /* ── 환경광 (기획서 §7 · 언리얼의 SkyLight 에 해당) ──────────────────
+     Cesium 은 모델에 구면조화 계수를 주지 않으면 환경광이 사실상 없다.
+     그러면 직사광이 닿지 않는 면이 새까맣게 죽어, 같은 모델인데도 언리얼보다
+     훨씬 거칠어 보인다. 하늘빛 환경광을 넣어 그늘을 열어 준다. */
+  function applyAmbient(model){
+    const C = Cesium.Cartesian3;
+    const ibl = model.imageBasedLighting;
+    if (!ibl) return;
+    ibl.imageBasedLightingFactor = new Cesium.Cartesian2(1, 1);
+    ibl.sphericalHarmonicCoefficients = [
+      new C(0.62, 0.62, 0.68),   // L00  하늘 전반의 밝기
+      new C(0.00, 0.00, 0.00), new C(0.16, 0.16, 0.19), new C(0.00, 0.00, 0.00),
+      new C(0.00, 0.00, 0.00), new C(0.00, 0.00, 0.00),
+      new C(0.05, 0.05, 0.05), new C(0.00, 0.00, 0.00), new C(0.00, 0.00, 0.00),
+    ];
   }
 
   /* 기존 돌출 폴리곤 성전(scripts/data/15-temple.js)을 렌더에서 뺀다.
@@ -139,5 +206,6 @@ window.BibleAtlasTempleModel = (function () {
   }
 
   return { load, setVisible, isLoaded, alignment, flyTo, hideLegacyTemple,
+           applyTerrainClipping, templeFootprint,
            get model(){ return model; } };
 })();
