@@ -6,9 +6,10 @@ const MODEL_URL = './assets/herod-temple/ad30/lod1.glb?v=20260819b';
 const EYE_HEIGHT = 1.68;
 const MOVE_SPEED = 7;
 const COLLISION_RADIUS = 0.55;
-const MAX_STEP_HEIGHT = 0.55; // 보행 편의용 충돌 파라미터. 역사 치수가 아니다.
+const MAX_STEP_HEIGHT = 0.65; // 계단 자동 승단. 역사 치수가 아닌 보행 파라미터다.
+const MAX_AUTO_CLIMB_HEIGHT = 1.05; // 낮은 턱을 자연스럽게 넘는 보행 보조
 const GRAVITY = 22;
-const JUMP_SPEED = 7.2;
+const JUMP_SPEED = 8.6;
 /* openbibleinfo vendor/3d-temple-mount src/40-data.js PLACE_VIEWS.gentiles.
    이방인의 뜰 시작점을 새로 추정하지 않고 검증된 기존 시점을 그대로 쓴다. */
 const GENTILES_SPAWN = { position:[186.8, 0, 321.2], lookAt:[104, 26, 227] };
@@ -106,10 +107,10 @@ function floorHeightAt(position){
   return belowEye ? belowEye.point.y : null;
 }
 
-function blocked(origin, direction, distance){
+function blocked(origin, direction, distance, eyeDrop = EYE_HEIGHT * 0.42){
   if (distance <= 0) return false;
   const eye = origin.clone();
-  eye.y -= EYE_HEIGHT * 0.42;
+  eye.y -= eyeDrop;
   raycaster.set(eye, direction.clone().normalize());
   raycaster.far = distance + COLLISION_RADIUS;
   return raycaster.intersectObjects(collisionMeshes, false).length > 0;
@@ -147,9 +148,10 @@ new GLTFLoader().load(MODEL_URL, gltf => {
     object.frustumCulled = true;
     collisionMeshes.push(object);
     const mats = Array.isArray(object.material) ? object.material : [object.material];
-    /* 외부 조망용 GLB는 앞면만 그리지만, 1인칭에서는 열린 천장·문 안쪽에서
-       같은 면의 뒷면도 보인다. DoubleSide로 내부의 깨진 듯한 빈 면을 없앤다. */
-    mats.forEach(mat => { if (mat) { mat.side = THREE.DoubleSide; mat.needsUpdate = true; } });
+    /* GLB의 문·아치·지붕에는 외부에서 숨겨지는 내부 삼각면이 있다.
+       전체 DoubleSide는 그 면을 가시 모양 파편으로 노출하므로 원본과 동일하게
+       앞면만 렌더한다. 내부에서 보이지 않는 곳은 추후 실제 내벽 메시로 보강한다. */
+    mats.forEach(mat => { if (mat) { mat.side = THREE.FrontSide; mat.needsUpdate = true; } });
   });
   bounds = new THREE.Box3().setFromObject(model);
   applySpawn();
@@ -186,11 +188,19 @@ function updateMovement(dt){
     const candidate = camera.position.clone().addScaledVector(desired, distance);
     const nextFloor = floorHeightAt(candidate);
     const stepRise = currentFloor != null && nextFloor != null ? nextFloor - currentFloor : 0;
-    /* 낮은 계단은 바닥 단차로 올라가고, 허리 높이의 벽만 수평 충돌로 막는다. */
-    if (stepRise <= MAX_STEP_HEIGHT && !blocked(camera.position, desired, distance)) {
+    const waistBlocked = blocked(camera.position, desired, distance);
+    const headBlocked = blocked(camera.position, desired, distance, EYE_HEIGHT * 0.08);
+    const normalStep = stepRise <= MAX_STEP_HEIGHT && !waistBlocked;
+    /* 허리선에는 걸리지만 머리선은 비어 있는 낮은 턱은, 상면이 확인될 때만
+       자동으로 올라간다. 벽을 통과시키지 않고 낮은 장애물에만 적용한다. */
+    const autoClimb = stepRise > MAX_STEP_HEIGHT && stepRise <= MAX_AUTO_CLIMB_HEIGHT &&
+                      waistBlocked && !headBlocked && nextFloor != null;
+    if (normalStep || autoClimb) {
       camera.position.x = candidate.x;
       camera.position.z = candidate.z;
-      if (grounded && nextFloor != null) camera.position.y = nextFloor + EYE_HEIGHT;
+      if (grounded && nextFloor != null) {
+        camera.position.y = nextFloor + EYE_HEIGHT;
+      }
     }
   }
 
