@@ -6,12 +6,20 @@ const MODEL_URL = './assets/herod-temple/ad30/lod1.glb?v=20260819b';
 const EYE_HEIGHT = 1.68;
 const MOVE_SPEED = 7;
 const COLLISION_RADIUS = 0.55;
+const MAX_STEP_HEIGHT = 0.55; // 보행 편의용 충돌 파라미터. 역사 치수가 아니다.
+const GRAVITY = 22;
+const JUMP_SPEED = 7.2;
+/* openbibleinfo vendor/3d-temple-mount src/40-data.js PLACE_VIEWS.gentiles.
+   이방인의 뜰 시작점을 새로 추정하지 않고 검증된 기존 시점을 그대로 쓴다. */
+const GENTILES_SPAWN = { position:[186.8, 0, 321.2], lookAt:[104, 26, 227] };
 
 const viewport = document.getElementById('viewport');
 const startScreen = document.getElementById('startScreen');
 const startButton = document.getElementById('startExperience');
 const statusText = document.getElementById('statusText');
 const exitButton = document.getElementById('exitExperience');
+const spawnChoices = [...document.querySelectorAll('.spawnChoice')];
+const spawnFieldset = document.getElementById('spawnChoices');
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x86add4);
@@ -43,6 +51,9 @@ const right = new THREE.Vector3();
 const desired = new THREE.Vector3();
 let modelReady = false;
 let bounds = null;
+let selectedSpawn = 'outside';
+let verticalVelocity = 0;
+let grounded = false;
 
 function setStatus(message){ statusText.textContent = message; }
 function returnToAtlas(){
@@ -66,10 +77,22 @@ controls.addEventListener('unlock', () => {
   }
 });
 startButton.addEventListener('click', () => controls.lock());
+spawnChoices.forEach(button => button.addEventListener('click', () => {
+  selectedSpawn = button.dataset.spawn;
+  spawnChoices.forEach(item => item.classList.toggle('active', item === button));
+  if (modelReady) applySpawn();
+}));
 
 addEventListener('keydown', e => {
   if (['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) {
     keys.add(e.code); e.preventDefault();
+  }
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (!e.repeat && controls.isLocked && grounded) {
+      verticalVelocity = JUMP_SPEED;
+      grounded = false;
+    }
   }
 });
 addEventListener('keyup', e => keys.delete(e.code));
@@ -79,7 +102,7 @@ function floorHeightAt(position){
   raycaster.set(new THREE.Vector3(position.x, bounds.max.y + 5, position.z), down);
   raycaster.far = bounds.max.y - bounds.min.y + 15;
   const hits = raycaster.intersectObjects(collisionMeshes, false);
-  const belowEye = hits.find(hit => hit.point.y <= position.y + EYE_HEIGHT);
+  const belowEye = hits.find(hit => hit.point.y <= position.y - EYE_HEIGHT * 0.2);
   return belowEye ? belowEye.point.y : null;
 }
 
@@ -92,18 +115,28 @@ function blocked(origin, direction, distance){
   return raycaster.intersectObjects(collisionMeshes, false).length > 0;
 }
 
-function spawnFromModel(model){
-  bounds = new THREE.Box3().setFromObject(model);
+function applySpawn(){
+  if (!bounds) return;
   const size = bounds.getSize(new THREE.Vector3());
-  const spawn = new THREE.Vector3(
-    (bounds.min.x + bounds.max.x) / 2,
-    bounds.max.y + EYE_HEIGHT,
-    bounds.max.z - size.z * 0.06
-  );
-  const ground = floorHeightAt(spawn);
-  spawn.y = (ground ?? bounds.min.y) + EYE_HEIGHT;
+  let spawn, target;
+  if (selectedSpawn === 'gentiles') {
+    spawn = new THREE.Vector3(...GENTILES_SPAWN.position);
+    spawn.y += EYE_HEIGHT;
+    target = new THREE.Vector3(...GENTILES_SPAWN.lookAt);
+  } else {
+    spawn = new THREE.Vector3(
+      (bounds.min.x + bounds.max.x) / 2,
+      bounds.max.y + EYE_HEIGHT,
+      bounds.max.z - size.z * 0.06
+    );
+    const ground = floorHeightAt(spawn);
+    spawn.y = (ground ?? bounds.min.y) + EYE_HEIGHT;
+    target = new THREE.Vector3(spawn.x, spawn.y, bounds.getCenter(new THREE.Vector3()).z);
+  }
   camera.position.copy(spawn);
-  camera.lookAt(new THREE.Vector3(spawn.x, spawn.y, bounds.getCenter(new THREE.Vector3()).z));
+  camera.lookAt(target);
+  verticalVelocity = 0;
+  grounded = true;
 }
 
 new GLTFLoader().load(MODEL_URL, gltf => {
@@ -114,11 +147,15 @@ new GLTFLoader().load(MODEL_URL, gltf => {
     object.frustumCulled = true;
     collisionMeshes.push(object);
     const mats = Array.isArray(object.material) ? object.material : [object.material];
-    mats.forEach(mat => { if (mat) { mat.side = THREE.FrontSide; mat.needsUpdate = true; } });
+    /* 외부 조망용 GLB는 앞면만 그리지만, 1인칭에서는 열린 천장·문 안쪽에서
+       같은 면의 뒷면도 보인다. DoubleSide로 내부의 깨진 듯한 빈 면을 없앤다. */
+    mats.forEach(mat => { if (mat) { mat.side = THREE.DoubleSide; mat.needsUpdate = true; } });
   });
-  spawnFromModel(model);
+  bounds = new THREE.Box3().setFromObject(model);
+  applySpawn();
   modelReady = true;
   startButton.disabled = false;
+  spawnFieldset.disabled = false;
   startButton.textContent = '체험 시작하기';
   setStatus('모델 준비 완료');
 }, progress => {
@@ -134,20 +171,47 @@ function updateMovement(dt){
   if (!controls.isLocked || !modelReady) return;
   camera.getWorldDirection(forward);
   forward.y = 0;
-  if (forward.lengthSq() < 0.001) return;
-  forward.normalize();
+  if (forward.lengthSq() >= 0.001) forward.normalize();
   right.crossVectors(forward, camera.up).normalize();
   desired.set(0,0,0);
   if (keys.has('KeyW') || keys.has('ArrowUp')) desired.add(forward);
   if (keys.has('KeyS') || keys.has('ArrowDown')) desired.sub(forward);
   if (keys.has('KeyD') || keys.has('ArrowRight')) desired.add(right);
   if (keys.has('KeyA') || keys.has('ArrowLeft')) desired.sub(right);
-  if (!desired.lengthSq()) return;
-  desired.normalize();
-  const distance = MOVE_SPEED * Math.min(dt, 0.05);
-  if (!blocked(camera.position, desired, distance)) camera.position.addScaledVector(desired, distance);
+  const frameDt = Math.min(dt, 0.05);
+  if (desired.lengthSq()) {
+    desired.normalize();
+    const distance = MOVE_SPEED * frameDt;
+    const currentFloor = floorHeightAt(camera.position);
+    const candidate = camera.position.clone().addScaledVector(desired, distance);
+    const nextFloor = floorHeightAt(candidate);
+    const stepRise = currentFloor != null && nextFloor != null ? nextFloor - currentFloor : 0;
+    /* 낮은 계단은 바닥 단차로 올라가고, 허리 높이의 벽만 수평 충돌로 막는다. */
+    if (stepRise <= MAX_STEP_HEIGHT && !blocked(camera.position, desired, distance)) {
+      camera.position.x = candidate.x;
+      camera.position.z = candidate.z;
+      if (grounded && nextFloor != null) camera.position.y = nextFloor + EYE_HEIGHT;
+    }
+  }
+
   const floor = floorHeightAt(camera.position);
-  if (floor != null) camera.position.y = THREE.MathUtils.lerp(camera.position.y, floor + EYE_HEIGHT, Math.min(1, dt * 12));
+  if (floor != null) {
+    const floorEye = floor + EYE_HEIGHT;
+    if (grounded && verticalVelocity <= 0) {
+      camera.position.y = THREE.MathUtils.lerp(camera.position.y, floorEye, Math.min(1, frameDt * 16));
+    } else {
+      verticalVelocity -= GRAVITY * frameDt;
+      camera.position.y += verticalVelocity * frameDt;
+      if (verticalVelocity <= 0 && camera.position.y <= floorEye) {
+        camera.position.y = floorEye;
+        verticalVelocity = 0;
+        grounded = true;
+      }
+    }
+  } else {
+    verticalVelocity -= GRAVITY * frameDt;
+    camera.position.y += verticalVelocity * frameDt;
+  }
 }
 
 function animate(){
