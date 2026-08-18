@@ -1,0 +1,25 @@
+:root{--gold:#f0c65a;--ink:#110e0a;--stone:#f4ead7;--muted:#c0b49f}
+*{box-sizing:border-box}
+html,body,#experience,#viewport{width:100%;height:100%;margin:0;overflow:hidden}
+body{background:#17120c;color:var(--stone);font-family:'Noto Sans KR',sans-serif}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+#exitExperience{position:fixed;z-index:30;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));width:48px;height:48px;border:1px solid #f0c65a99;border-radius:50%;background:#17110de6;color:#fff;font-size:32px;line-height:42px;cursor:pointer;box-shadow:0 6px 24px #0008}
+#exitExperience:hover,#exitExperience:focus-visible{background:var(--gold);color:var(--ink);outline:none}
+#status,#instructions{position:fixed;z-index:10;background:#17110dcc;border:1px solid #f0c65a55;backdrop-filter:blur(9px);border-radius:10px}
+#status{top:max(16px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left));padding:10px 14px;display:flex;flex-direction:column;gap:3px}
+#status strong{font-family:'Noto Serif KR',serif;color:var(--gold)}
+#status span,#instructions{font-size:12px;color:var(--muted)}
+#instructions{left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);padding:9px 13px;white-space:nowrap}
+#instructions b{color:var(--stone)}
+#startScreen{position:fixed;z-index:20;inset:0;display:none;place-items:center;padding:24px;background:linear-gradient(#101a25aa,#21170bd9)}
+#startScreen.open{display:grid}
+.startCard{width:min(520px,100%);padding:30px;border:1px solid #f0c65a66;border-radius:18px;background:#17110df2;box-shadow:0 24px 70px #000b;text-align:center}
+.eyebrow{font-size:11px;letter-spacing:.16em;color:var(--gold)}
+h1{font-family:'Noto Serif KR',serif;font-size:clamp(25px,5vw,38px);margin:10px 0;color:#fff}
+.startCard p{line-height:1.7;color:var(--muted)}
+.startCard button{margin:10px 0 14px;padding:12px 22px;border:1px solid var(--gold);border-radius:9px;background:var(--gold);color:#21160a;font:700 15px inherit;cursor:pointer}
+.startCard button:disabled{opacity:.45;cursor:wait}
+.startCard small{display:block;line-height:1.55;color:#9d927f}
+#crosshair{display:none;position:fixed;z-index:9;left:50%;top:50%;width:6px;height:6px;transform:translate(-50%,-50%);border:1px solid #fff;border-radius:50%;box-shadow:0 0 4px #000}
+body.locked #crosshair{display:block}
+@media(max-width:700px){#instructions{white-space:normal;width:calc(100% - 32px);text-align:center}.startCard{padding:24px 18px}}

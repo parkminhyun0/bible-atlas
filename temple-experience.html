@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AD 30 헤롯 성전 1인칭 체험 | BibleAtlas</title>
+<meta name="description" content="근거 기반 3D 모델로 살펴보는 AD 30 무렵 예루살렘 헤롯 성전 1인칭 테스트 체험입니다.">
+<link rel="canonical" href="https://parkminhyun0.github.io/bible-atlas/temple-experience.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./temple-experience.css?v=20260819a">
+</head>
+<body>
+<main id="experience" aria-label="헤롯 성전 1인칭 체험">
+  <div id="viewport"></div>
+  <button id="exitExperience" type="button" aria-label="체험을 끝내고 BibleAtlas 지도로 돌아가기">×</button>
+  <section id="status" aria-live="polite">
+    <strong>AD 30 · 헤롯 성전</strong>
+    <span id="statusText">모델을 불러오는 중…</span>
+  </section>
+  <section id="instructions">
+    <b>이동</b> WASD · 방향키　<b>시선</b> 화면 클릭 후 마우스/트랙패드　<b>해제</b> Esc
+  </section>
+  <section id="startScreen" class="open" role="dialog" aria-modal="true" aria-labelledby="startTitle">
+    <div class="startCard">
+      <span class="eyebrow">BIBLEATLAS · WALKTHROUGH PROTOTYPE</span>
+      <h1 id="startTitle">1세기 예루살렘 성전 둘러보기</h1>
+      <p>기존 사료·치수표·A/B/C 근거 등급으로 만든 동일한 GLB 모델을 1인칭 시점에서 살펴보는 테스트입니다.</p>
+      <button id="startExperience" type="button" disabled>모델 준비 중…</button>
+      <small>현재 테스트판은 보행·지면 추적·건물 충돌을 검증합니다. 역사적 출입 제한 안내는 다음 단계에서 적용합니다.</small>
+    </div>
+  </section>
+  <div id="crosshair" aria-hidden="true"></div>
+</main>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}
+</script>
+<script type="module" src="./scripts/temple-experience.js?v=20260819a"></script>
+</body>
+</html>

@@ -27,11 +27,15 @@ map.on('click','bld',e=>{
     `</div>`).addTo(map);
 });
 
-/* 성전산 근접 보기 — 지형 1:1 로 전환하고, 성전 동편에서 감람산을 마주 보는
-   지면 높이 시점으로 이동한다(하늘이 함께 보이도록 pitch 를 세운다). */
+/* 헤롯 성전 전용 1인칭 체험으로 이동한다. 지도 카메라는 sessionStorage에만
+   보존하며, 체험 종료 뒤 같은 탭에서 정확한 시점으로 복귀한다. */
 document.getElementById('templeView').addEventListener('click', () => {
-  stopOrbit(); setExag(false);
-  map.flyTo({ center:[35.23600,31.77800], zoom:17.9, pitch:84, bearing:78, duration:2400 });
+  const c = map.getCenter();
+  sessionStorage.setItem('bibleAtlas:mapState:v1', JSON.stringify({
+    center:[c.lng, c.lat], zoom:map.getZoom(), pitch:map.getPitch(), bearing:map.getBearing(),
+  }));
+  sessionStorage.setItem('bibleAtlas:returnUrl', window.location.href);
+  window.location.assign('./temple-experience.html');
 });
 
 /* 고증 배경: 현대 위성은 지형 검증용으로만 약하게 사용. 클릭 시 현대 위성 원색으로 전환 */
