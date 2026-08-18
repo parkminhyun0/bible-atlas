@@ -205,12 +205,12 @@
 
     <details open>
       <summary>1세기 육로</summary>
-      <label><input type="checkbox" id="treeRoadMaster" checked> 육로 전체 보기</label>
+      <label><input type="checkbox" id="treeRoadMaster"> 육로 전체 보기</label>
       <div class="treeSub">
-        <label><input type="checkbox" class="road-item" data-key="jerichoRoad" checked> 예루살렘–여리고 오르막길</label>
-        <label><input type="checkbox" class="road-item" data-key="ridgeRoad" checked> 중앙산지 능선길</label>
-        <label><input type="checkbox" class="road-item" data-key="jordanRoad" checked> 요단 계곡 · 베레아 길</label>
-        <label><input type="checkbox" class="road-item" data-key="viaMaris" checked> 갈릴리–해안 회랑</label>
+        <label><input type="checkbox" class="road-item" data-key="jerichoRoad"> 예루살렘–여리고 오르막길</label>
+        <label><input type="checkbox" class="road-item" data-key="ridgeRoad"> 중앙산지 능선길</label>
+        <label><input type="checkbox" class="road-item" data-key="jordanRoad"> 요단 계곡 · 베레아 길</label>
+        <label><input type="checkbox" class="road-item" data-key="viaMaris"> 갈릴리–해안 회랑</label>
       </div>
     </details>
 
@@ -389,10 +389,15 @@ let viewer, layerCounts = {};
     layerCounts.buildings = BibleAtlasBuildings.add(viewer);
     console.log('Cesium 레이어:', layerCounts);
     setJewishHour(6);
-    flyTempleToOlivet();
+    flyFromOrbit();
 
     setupMapLibreStyleControls();
     window.dispatchEvent(new Event('bibleatlas-cesium-ready'));
+
+    /* AD 30 성전 3D 모델(GLB 14 MB)은 처음부터 받지 않는다. 첫 화면이 궤도
+       시점이라 보이지도 않는데 받으면 낭비다. 예루살렘 가까이 왔을 때나
+       '헤롯 성전 보기'를 눌렀을 때 그때 받는다. */
+    watchTempleProximity();
 
     /* 그림자맵은 카메라 주변 일정 거리까지만 계산한다. 넓게 조망하면 그 경계가
        어두운 띠로 보이므로, 카메라 고도에 따라 사거리를 늘리고 아주 높은
@@ -544,6 +549,19 @@ function setupMapLibreStyleControls(){
   }, { passive: false, capture: true });
 }
 
+/* 예루살렘에 가까워지면 성전 3D 모델을 불러온다 */
+function watchTempleProximity(){
+  if (typeof BibleAtlasTempleModel === 'undefined') return;
+  const TEMPLE_LL = Cesium.Cartesian3.fromDegrees(35.2354, 31.7780, 740);
+  const check = () => {
+    if (BibleAtlasTempleModel.isLoaded()) { viewer.scene.camera.changed.removeEventListener(check); return; }
+    const d = Cesium.Cartesian3.distance(viewer.camera.positionWC, TEMPLE_LL);
+    if (d < 12000) BibleAtlasTempleModel.load(viewer);
+  };
+  viewer.scene.camera.changed.addEventListener(check);
+  check();
+}
+
 /* 카메라 고도에 맞춰 그림자 사거리를 조절한다 */
 function adaptShadows(){
   if (!viewer) return;
@@ -587,6 +605,15 @@ function lookFromTo(from, to, eyeAboveGround, pitchDeg){
 }
 function flyTempleToOlivet(){ lookFromTo(TEMPLE, OLIVET, 25, -3); }   // 거의 수평 — 하늘이 보인다
 function flyOlivetToTemple(){ lookFromTo(OLIVET, TEMPLE, 25, -6); }
+/* 첫 화면 — 위성에서 이스라엘 땅을 수직으로 내려다본다.
+   고도 40만 m 면 단에서 브엘세바까지, 지중해에서 요단 동편까지 한 화면에 들어온다. */
+function flyFromOrbit(){
+  viewer.camera.setView({
+    destination: Cesium.Cartesian3.fromDegrees(35.05, 31.60, 400000),
+    orientation: { heading: 0, pitch: -Cesium.Math.PI_OVER_TWO, roll: 0 },
+  });
+}
+
 function flyWide(){
   viewer.camera.flyTo({
     destination: Cesium.Cartesian3.fromDegrees(35.35, 31.55, 42000),
