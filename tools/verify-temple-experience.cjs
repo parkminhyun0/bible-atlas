@@ -26,7 +26,7 @@ const checks = [
   ['device-specific realistic visitor GLBs', fs.existsSync(avatarHigh) && fs.existsSync(avatarMobile) && js.includes('AVATAR_MODEL_URL')],
   ['realistic visitor safe fallback', js.includes('loadRealisticVisitorAvatar') && js.includes('keeping procedural fallback')],
   ['realistic visitor runtime pivots', ['armLeft','armRight','legLeft','legRight'].every(name => js.includes(name))],
-  ['avatar faces movement direction', js.includes('AVATAR_FORWARD_OFFSET = Math.PI') && js.includes('+AVATAR_FORWARD_OFFSET')],
+  ['avatar faces movement direction', js.includes('AVATAR_FORWARD_OFFSET = 0') && js.includes('+AVATAR_FORWARD_OFFSET')],
   ['skinned avatar preserves anatomical rest pose', js.includes('walkRestRotationX') && js.includes('restX(arms[0])+swing')],
   ['continuous indoor safety floor', js.includes('MAX_INTERIOR_FLOOR_DROP') && js.includes('hasNearbyRoof') && js.includes('lastFloorHeight')],
 ];
