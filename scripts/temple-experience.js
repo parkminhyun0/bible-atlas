@@ -15,8 +15,8 @@ const MAX_INTERIOR_FLOOR_DROP = 1.15; // 내부 메시 틈을 통한 수직 추�
 const AVATAR_TEXTURE_URL = './assets/herod-temple/character/visitor-cloak-weave-v1.png?v=20260819a';
 const touchMode = matchMedia('(hover: none), (pointer: coarse)').matches;
 const AVATAR_MODEL_URL = touchMode
-  ? './assets/herod-temple/character/visitor-realistic-mobile.glb?v=20260819f'
-  : './assets/herod-temple/character/visitor-realistic-high.glb?v=20260819f';
+  ? './assets/herod-temple/character/visitor-realistic-mobile.glb?v=20260819g'
+  : './assets/herod-temple/character/visitor-realistic-high.glb?v=20260819g';
 /* openbibleinfo vendor/3d-temple-mount src/40-data.js PLACE_VIEWS.gentiles.
    이방인의 뜰 시작점을 새로 추정하지 않고 검증된 기존 시점을 그대로 쓴다. */
 const GENTILES_SPAWN = { position:[186.8, 0, 321.2], lookAt:[104, 26, 227] };

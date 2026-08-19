@@ -26,6 +26,7 @@ const checks = [
   ['touch orbit parity', js.includes('if(thirdPerson)') && js.includes('orbitYaw-=deltaX*0.004')],
   ['reference-derived visitor material', js.includes('visitor-cloak-weave-v1.png') && js.includes('scarfCap') && js.includes('pouch')],
   ['device-specific realistic visitor GLBs', fs.existsSync(avatarHigh) && fs.existsSync(avatarMobile) && js.includes('AVATAR_MODEL_URL')],
+  ['anatomical avatar silhouette assets', js.includes('visitor-realistic-high.glb?v=20260819g')],
   ['realistic visitor safe fallback', js.includes('loadRealisticVisitorAvatar') && js.includes('keeping procedural fallback')],
   ['realistic visitor runtime pivots', ['armLeft','armRight','legLeft','legRight'].every(name => js.includes(name))],
   ['FPS camera-relative movement basis', js.includes("desired.add(forward)") && js.includes("desired.sub(forward)") && js.includes("desired.add(right)") && js.includes("desired.sub(right)")],
