@@ -26,7 +26,9 @@ const checks = [
   ['device-specific realistic visitor GLBs', fs.existsSync(avatarHigh) && fs.existsSync(avatarMobile) && js.includes('AVATAR_MODEL_URL')],
   ['realistic visitor safe fallback', js.includes('loadRealisticVisitorAvatar') && js.includes('keeping procedural fallback')],
   ['realistic visitor runtime pivots', ['armLeft','armRight','legLeft','legRight'].every(name => js.includes(name))],
-  ['avatar faces movement direction', js.includes('AVATAR_FORWARD_OFFSET = 0') && js.includes('+AVATAR_FORWARD_OFFSET')],
+  ['FPS camera-relative movement basis', js.includes("desired.add(forward)") && js.includes("desired.sub(forward)") && js.includes("desired.add(right)") && js.includes("desired.sub(right)")],
+  ['third-person body follows camera yaw', js.includes('Math.atan2(forward.x,forward.z)') && js.includes('W advances, S backpedals') && !js.includes('Math.atan2(desired.x,desired.z)')],
+  ['model-specific forward axes', js.includes('group.userData.forwardOffset=0') && js.includes('loaded.userData.forwardOffset = Math.PI')],
   ['skinned avatar preserves anatomical rest pose', js.includes('walkRestRotationX') && js.includes('restX(arms[0])+swing')],
   ['continuous indoor safety floor', js.includes('MAX_INTERIOR_FLOOR_DROP') && js.includes('hasNearbyRoof') && js.includes('lastFloorHeight')],
 ];
