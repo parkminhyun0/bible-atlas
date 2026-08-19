@@ -14,6 +14,9 @@ const JUMP_SPEED = 8.6;
 const MAX_INTERIOR_FLOOR_DROP = 1.15; // 내부 메시 틈을 통한 수직 추락만 차단한다.
 const AVATAR_TEXTURE_URL = './assets/herod-temple/character/visitor-cloak-weave-v1.png?v=20260819a';
 const touchMode = matchMedia('(hover: none), (pointer: coarse)').matches;
+const AVATAR_MODEL_URL = touchMode
+  ? './assets/herod-temple/character/visitor-realistic-mobile.glb?v=20260819a'
+  : './assets/herod-temple/character/visitor-realistic-high.glb?v=20260819a';
 /* openbibleinfo vendor/3d-temple-mount src/40-data.js PLACE_VIEWS.gentiles.
    이방인의 뜰 시작점을 새로 추정하지 않고 검증된 기존 시점을 그대로 쓴다. */
 const GENTILES_SPAWN = { position:[186.8, 0, 321.2], lookAt:[104, 26, 227] };
@@ -143,7 +146,39 @@ function createVisitorAvatar(){
   scene.add(group);
   return group;
 }
-const visitorAvatar=createVisitorAvatar();
+let visitorAvatar=createVisitorAvatar();
+
+function loadRealisticVisitorAvatar(){
+  new GLTFLoader().load(AVATAR_MODEL_URL, gltf => {
+    const loaded = gltf.scene;
+    loaded.name = 'visitorAvatarRealistic';
+    loaded.visible = thirdPerson;
+    loaded.traverse(object => {
+      if (!object.isMesh) return;
+      object.frustumCulled = true;
+      const mats = Array.isArray(object.material) ? object.material : [object.material];
+      mats.forEach(mat => {
+        if (mat?.map) mat.map.colorSpace = THREE.SRGBColorSpace;
+        if (mat) { mat.side = THREE.FrontSide; mat.needsUpdate = true; }
+      });
+    });
+    const arms = ['armLeft','armRight'].map(name => loaded.getObjectByName(name));
+    const legs = ['legLeft','legRight'].map(name => loaded.getObjectByName(name));
+    if ([...arms,...legs].some(node => !node)) {
+      console.warn('Visitor GLB is missing runtime limb pivots; keeping procedural fallback.');
+      return;
+    }
+    loaded.userData.limbs = {arms,legs};
+    loaded.position.copy(visitorAvatar.position);
+    loaded.rotation.copy(visitorAvatar.rotation);
+    scene.remove(visitorAvatar);
+    visitorAvatar = loaded;
+    scene.add(visitorAvatar);
+  }, undefined, error => {
+    console.warn('Realistic visitor GLB failed to load; using procedural fallback.', error);
+  });
+}
+loadRealisticVisitorAvatar();
 
 function setStatus(message){ statusText.textContent = message; }
 function returnToAtlas(){

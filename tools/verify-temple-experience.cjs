@@ -7,6 +7,8 @@ const root = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'temple-experience.html'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'temple-experience.css'), 'utf8');
 const js = fs.readFileSync(path.join(root, 'scripts', 'temple-experience.js'), 'utf8');
+const avatarHigh = path.join(root, 'assets', 'herod-temple', 'character', 'visitor-realistic-high.glb');
+const avatarMobile = path.join(root, 'assets', 'herod-temple', 'character', 'visitor-realistic-mobile.glb');
 
 const checks = [
   ['desktop F sprint input', js.includes("keys.has('KeyF')") && html.includes('F + 이동키')],
@@ -21,6 +23,9 @@ const checks = [
   ['walk/run limb animation', js.includes('avatarWalkTime') && js.includes('visitorAvatar.userData.limbs')],
   ['third-person wall-safe chase camera', js.includes('function updateView()') && js.includes('safeDistance')],
   ['reference-derived visitor material', js.includes('visitor-cloak-weave-v1.png') && js.includes('scarfCap') && js.includes('pouch')],
+  ['device-specific realistic visitor GLBs', fs.existsSync(avatarHigh) && fs.existsSync(avatarMobile) && js.includes('AVATAR_MODEL_URL')],
+  ['realistic visitor safe fallback', js.includes('loadRealisticVisitorAvatar') && js.includes('keeping procedural fallback')],
+  ['realistic visitor runtime pivots', ['armLeft','armRight','legLeft','legRight'].every(name => js.includes(name))],
   ['continuous indoor safety floor', js.includes('MAX_INTERIOR_FLOOR_DROP') && js.includes('hasNearbyRoof') && js.includes('lastFloorHeight')],
 ];
 
