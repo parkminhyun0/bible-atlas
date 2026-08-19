@@ -15,8 +15,8 @@ const MAX_INTERIOR_FLOOR_DROP = 1.15; // 내부 메시 틈을 통한 수직 추�
 const AVATAR_TEXTURE_URL = './assets/herod-temple/character/visitor-cloak-weave-v1.png?v=20260819a';
 const touchMode = matchMedia('(hover: none), (pointer: coarse)').matches;
 const AVATAR_MODEL_URL = touchMode
-  ? './assets/herod-temple/character/visitor-realistic-mobile.glb?v=20260819d'
-  : './assets/herod-temple/character/visitor-realistic-high.glb?v=20260819d';
+  ? './assets/herod-temple/character/visitor-realistic-mobile.glb?v=20260819e'
+  : './assets/herod-temple/character/visitor-realistic-high.glb?v=20260819e';
 /* openbibleinfo vendor/3d-temple-mount src/40-data.js PLACE_VIEWS.gentiles.
    이방인의 뜰 시작점을 새로 추정하지 않고 검증된 기존 시점을 그대로 쓴다. */
 const GENTILES_SPAWN = { position:[186.8, 0, 321.2], lookAt:[104, 26, 227] };
@@ -78,6 +78,7 @@ let touchSprint = false;
 const touchMove = new THREE.Vector2();
 let thirdPerson = false;
 let avatarWalkTime = 0;
+let avatarJumpBlend = 0;
 let lastFloorHeight = null;
 
 function createVisitorAvatar(){
@@ -141,7 +142,7 @@ function createVisitorAvatar(){
     const foot=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.09,0.34),leather);
     foot.position.set(0,-0.66,0.07); leg.add(foot); group.add(leg); limbs.legs.push(leg);
   }
-  group.userData.limbs=limbs;
+  group.userData.limbs={...limbs,forearms:[],shins:[]};
   group.userData.forwardOffset=0; // procedural visitor faces local +Z
   group.visible=false;
   scene.add(group);
@@ -165,16 +166,18 @@ function loadRealisticVisitorAvatar(){
     });
     const arms = ['armLeft','armRight'].map(name => loaded.getObjectByName(name));
     const legs = ['legLeft','legRight'].map(name => loaded.getObjectByName(name));
+    const forearms = ['forearmLeft','forearmRight'].map(name => loaded.getObjectByName(name));
+    const shins = ['shinLeft','shinRight'].map(name => loaded.getObjectByName(name));
     if ([...arms,...legs].some(node => !node)) {
       console.warn('Visitor GLB is missing runtime limb pivots; keeping procedural fallback.');
       return;
     }
-    [...arms,...legs].forEach(node => {
+    [...arms,...legs,...forearms,...shins].filter(Boolean).forEach(node => {
       // A glTF bone's imported local rotation is its anatomical rest pose.
       // Walking offsets must be additive; zeroing this value folds the skinned body.
       node.userData.walkRestRotationX = node.rotation.x;
     });
-    loaded.userData.limbs = {arms,legs};
+    loaded.userData.limbs = {arms,legs,forearms,shins};
     loaded.userData.forwardOffset = 0; // exported visitor faces local +Z
     loaded.position.copy(visitorAvatar.position);
     loaded.rotation.copy(visitorAvatar.rotation);
@@ -502,17 +505,26 @@ function updateMovement(dt){
     const yawDelta=Math.atan2(Math.sin(targetYaw-visitorAvatar.rotation.y),Math.cos(targetYaw-visitorAvatar.rotation.y));
     visitorAvatar.rotation.y+=yawDelta*(1-Math.exp(-12*frameDt));
   }
-  const swing=moving?Math.sin(avatarWalkTime)*0.42:0;
-  const {arms,legs}=visitorAvatar.userData.limbs;
+  avatarJumpBlend=THREE.MathUtils.damp(avatarJumpBlend,grounded?0:1,10,frameDt);
+  const gait=moving&&grounded?Math.sin(avatarWalkTime):0;
+  const {arms,legs,forearms=[],shins=[]}=visitorAvatar.userData.limbs;
   const restX=node=>node.userData.walkRestRotationX??0;
-  arms[0].rotation.x=THREE.MathUtils.damp(arms[0].rotation.x,restX(arms[0])+swing,10,frameDt);
-  arms[1].rotation.x=THREE.MathUtils.damp(arms[1].rotation.x,restX(arms[1])-swing,10,frameDt);
-  legs[0].rotation.x=THREE.MathUtils.damp(legs[0].rotation.x,restX(legs[0])-swing,10,frameDt);
-  legs[1].rotation.x=THREE.MathUtils.damp(legs[1].rotation.x,restX(legs[1])+swing,10,frameDt);
+  const poseX=(node,offset)=>{if(node)node.rotation.x=THREE.MathUtils.damp(node.rotation.x,restX(node)+offset,12,frameDt);};
+  const armSwing=gait*0.30;
+  const legSwing=gait*0.40;
+  poseX(arms[0],armSwing-avatarJumpBlend*0.35);
+  poseX(arms[1],-armSwing-avatarJumpBlend*0.35);
+  poseX(legs[0],-legSwing-avatarJumpBlend*0.16);
+  poseX(legs[1],legSwing+avatarJumpBlend*0.16);
+  poseX(forearms[0],0.10+Math.max(0,-gait)*0.20+avatarJumpBlend*0.38);
+  poseX(forearms[1],0.10+Math.max(0,gait)*0.20+avatarJumpBlend*0.38);
+  poseX(shins[0],Math.max(0,gait)*0.32+avatarJumpBlend*0.48);
+  poseX(shins[1],Math.max(0,-gait)*0.32+avatarJumpBlend*0.48);
 }
 
 function updateView(){
-  visitorAvatar.position.set(playerPosition.x,playerPosition.y-EYE_HEIGHT,playerPosition.z);
+  const gaitLift=grounded&&desired.lengthSq()>0.001?Math.abs(Math.sin(avatarWalkTime*2))*0.025:0;
+  visitorAvatar.position.set(playerPosition.x,playerPosition.y-EYE_HEIGHT+gaitLift,playerPosition.z);
   if(!thirdPerson){ camera.position.copy(playerPosition); return; }
   camera.getWorldDirection(forward); forward.y=0;
   if(forward.lengthSq()<0.001) forward.set(0,0,-1); else forward.normalize();
