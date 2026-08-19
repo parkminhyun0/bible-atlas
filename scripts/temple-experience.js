@@ -5,11 +5,13 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 const MODEL_URL = './assets/herod-temple/ad30/lod1.glb?v=20260819c';
 const EYE_HEIGHT = 1.68;
 const MOVE_SPEED = 7;
+const SPRINT_SPEED = 19;
 const COLLISION_RADIUS = 0.55;
 const MAX_STEP_HEIGHT = 0.65; // 계단 자동 승단. 역사 치수가 아닌 보행 파라미터다.
 const MAX_AUTO_CLIMB_HEIGHT = 1.05; // 낮은 턱을 자연스럽게 넘는 보행 보조
 const GRAVITY = 22;
 const JUMP_SPEED = 8.6;
+const touchMode = matchMedia('(hover: none), (pointer: coarse)').matches;
 /* openbibleinfo vendor/3d-temple-mount src/40-data.js PLACE_VIEWS.gentiles.
    이방인의 뜰 시작점을 새로 추정하지 않고 검증된 기존 시점을 그대로 쓴다. */
 const GENTILES_SPAWN = { position:[186.8, 0, 321.2], lookAt:[104, 26, 227] };
@@ -21,6 +23,11 @@ const statusText = document.getElementById('statusText');
 const exitButton = document.getElementById('exitExperience');
 const spawnChoices = [...document.querySelectorAll('.spawnChoice')];
 const spawnFieldset = document.getElementById('spawnChoices');
+const movePad = document.getElementById('movePad');
+const moveStick = document.getElementById('moveStick');
+const lookZone = document.getElementById('lookZone');
+const sprintButton = document.getElementById('sprintButton');
+const jumpButton = document.getElementById('jumpButton');
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x86add4);
@@ -28,7 +35,7 @@ scene.fog = new THREE.FogExp2(0xc8b895, 0.0016);
 
 const camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, 0.05, 1800);
 const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, touchMode ? 1.5 : 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -59,6 +66,9 @@ let verticalVelocity = 0;
 let grounded = false;
 let lastSafePosition = null;
 let debirNoticeShown = false;
+let experienceActive = false;
+let touchSprint = false;
+const touchMove = new THREE.Vector2();
 
 function setStatus(message){ statusText.textContent = message; }
 function returnToAtlas(){
@@ -69,11 +79,13 @@ function returnToAtlas(){
 exitButton.addEventListener('click', returnToAtlas);
 
 controls.addEventListener('lock', () => {
+  experienceActive = true;
   startScreen.classList.remove('open');
   document.body.classList.add('locked');
   setStatus('체험 중 · Esc로 시선 조작 해제');
 });
 controls.addEventListener('unlock', () => {
+  experienceActive = false;
   document.body.classList.remove('locked');
   if (modelReady) {
     startScreen.classList.add('open');
@@ -81,7 +93,14 @@ controls.addEventListener('unlock', () => {
     setStatus('일시 정지');
   }
 });
-startButton.addEventListener('click', () => controls.lock());
+startButton.addEventListener('click', () => {
+  if (touchMode) {
+    experienceActive = true;
+    startScreen.classList.remove('open');
+    document.body.classList.add('touch-active');
+    setStatus('모바일 체험 중 · 왼쪽 이동 / 오른쪽 시선');
+  } else controls.lock();
+});
 spawnChoices.forEach(button => button.addEventListener('click', () => {
   selectedSpawn = button.dataset.spawn;
   spawnChoices.forEach(item => item.classList.toggle('active', item === button));
@@ -89,18 +108,72 @@ spawnChoices.forEach(button => button.addEventListener('click', () => {
 }));
 
 addEventListener('keydown', e => {
-  if (['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) {
+  if (['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyF'].includes(e.code)) {
     keys.add(e.code); e.preventDefault();
   }
   if (e.code === 'Space') {
     e.preventDefault();
-    if (!e.repeat && controls.isLocked && grounded) {
-      verticalVelocity = JUMP_SPEED;
-      grounded = false;
-    }
+    if (!e.repeat) jump();
   }
 });
 addEventListener('keyup', e => keys.delete(e.code));
+addEventListener('blur', () => { keys.clear(); touchSprint = false; sprintButton?.classList.remove('active'); });
+
+function jump(){
+  if (experienceActive && grounded) {
+    verticalVelocity = JUMP_SPEED;
+    grounded = false;
+  }
+}
+
+if (touchMode) {
+  let movePointer = null;
+  const updateMovePad = event => {
+    const rect = movePad.getBoundingClientRect();
+    const radius = rect.width * 0.36;
+    let x = event.clientX - (rect.left + rect.width / 2);
+    let y = event.clientY - (rect.top + rect.height / 2);
+    const length = Math.hypot(x, y);
+    if (length > radius) { x *= radius / length; y *= radius / length; }
+    touchMove.set(x / radius, -y / radius);
+    moveStick.style.transform = `translate(calc(-50% + ${x}px),calc(-50% + ${y}px))`;
+  };
+  movePad.addEventListener('pointerdown', event => {
+    movePointer = event.pointerId; movePad.setPointerCapture(movePointer); updateMovePad(event); event.preventDefault();
+  });
+  movePad.addEventListener('pointermove', event => { if (event.pointerId === movePointer) updateMovePad(event); });
+  const stopMove = event => {
+    if (event.pointerId !== movePointer) return;
+    movePointer = null; touchMove.set(0,0); moveStick.style.transform = 'translate(-50%,-50%)';
+  };
+  movePad.addEventListener('pointerup', stopMove);
+  movePad.addEventListener('pointercancel', stopMove);
+
+  let lookPointer = null, lastLookX = 0, lastLookY = 0;
+  lookZone.addEventListener('pointerdown', event => {
+    lookPointer = event.pointerId; lastLookX = event.clientX; lastLookY = event.clientY;
+    lookZone.setPointerCapture(lookPointer); event.preventDefault();
+  });
+  lookZone.addEventListener('pointermove', event => {
+    if (event.pointerId !== lookPointer || !experienceActive) return;
+    camera.rotation.order = 'YXZ';
+    camera.rotation.y -= (event.clientX - lastLookX) * 0.004;
+    camera.rotation.x -= (event.clientY - lastLookY) * 0.004;
+    camera.rotation.x = THREE.MathUtils.clamp(camera.rotation.x, -Math.PI * 0.48, Math.PI * 0.48);
+    lastLookX = event.clientX; lastLookY = event.clientY;
+  });
+  const stopLook = event => { if (event.pointerId === lookPointer) lookPointer = null; };
+  lookZone.addEventListener('pointerup', stopLook);
+  lookZone.addEventListener('pointercancel', stopLook);
+
+  const setSprint = active => { touchSprint = active; sprintButton.classList.toggle('active', active); };
+  sprintButton.addEventListener('pointerdown', event => { sprintButton.setPointerCapture(event.pointerId); setSprint(true); event.preventDefault(); });
+  sprintButton.addEventListener('pointerup', () => setSprint(false));
+  sprintButton.addEventListener('pointercancel', () => setSprint(false));
+  jumpButton.addEventListener('pointerdown', event => { jumpButton.classList.add('active'); jump(); event.preventDefault(); });
+  jumpButton.addEventListener('pointerup', () => jumpButton.classList.remove('active'));
+  jumpButton.addEventListener('pointercancel', () => jumpButton.classList.remove('active'));
+}
 
 function floorHeightAt(position){
   if (!bounds) return null;
@@ -140,6 +213,7 @@ function applySpawn(){
   }
   camera.position.copy(spawn);
   camera.lookAt(target);
+  camera.rotation.order = 'YXZ';
   verticalVelocity = 0;
   grounded = true;
   lastSafePosition = camera.position.clone();
@@ -215,7 +289,7 @@ function updateDoors(dt){
   }
 }
 function updateMovement(dt){
-  if (!controls.isLocked || !modelReady) return;
+  if (!experienceActive || !modelReady) return;
   camera.getWorldDirection(forward);
   forward.y = 0;
   if (forward.lengthSq() >= 0.001) forward.normalize();
@@ -225,10 +299,12 @@ function updateMovement(dt){
   if (keys.has('KeyS') || keys.has('ArrowDown')) desired.sub(forward);
   if (keys.has('KeyD') || keys.has('ArrowRight')) desired.add(right);
   if (keys.has('KeyA') || keys.has('ArrowLeft')) desired.sub(right);
+  if (touchMove.y) desired.addScaledVector(forward, touchMove.y);
+  if (touchMove.x) desired.addScaledVector(right, touchMove.x);
   const frameDt = Math.min(dt, 0.05);
   if (desired.lengthSq()) {
     desired.normalize();
-    const distance = MOVE_SPEED * frameDt;
+    const distance = (keys.has('KeyF') || touchSprint ? SPRINT_SPEED : MOVE_SPEED) * frameDt;
     const currentFloor = floorHeightAt(camera.position);
     const candidate = camera.position.clone().addScaledVector(desired, distance);
     const nextFloor = floorHeightAt(candidate);
