@@ -12,7 +12,6 @@ const MAX_AUTO_CLIMB_HEIGHT = 1.05; // 낮은 턱을 자연스럽게 넘는 보�
 const GRAVITY = 22;
 const JUMP_SPEED = 8.6;
 const MAX_INTERIOR_FLOOR_DROP = 1.15; // 내부 메시 틈을 통한 수직 추락만 차단한다.
-const AVATAR_FORWARD_OFFSET = 0; // v2 GLB 정면은 Three.js 이동 정면과 이미 일치한다.
 const AVATAR_TEXTURE_URL = './assets/herod-temple/character/visitor-cloak-weave-v1.png?v=20260819a';
 const touchMode = matchMedia('(hover: none), (pointer: coarse)').matches;
 const AVATAR_MODEL_URL = touchMode
@@ -143,6 +142,7 @@ function createVisitorAvatar(){
     foot.position.set(0,-0.66,0.07); leg.add(foot); group.add(leg); limbs.legs.push(leg);
   }
   group.userData.limbs=limbs;
+  group.userData.forwardOffset=0; // procedural visitor faces local +Z
   group.visible=false;
   scene.add(group);
   return group;
@@ -175,6 +175,7 @@ function loadRealisticVisitorAvatar(){
       node.userData.walkRestRotationX = node.rotation.x;
     });
     loaded.userData.limbs = {arms,legs};
+    loaded.userData.forwardOffset = Math.PI; // Blender/glTF visitor faces local -Z
     loaded.position.copy(visitorAvatar.position);
     loaded.rotation.copy(visitorAvatar.rotation);
     scene.remove(visitorAvatar);
@@ -493,7 +494,12 @@ function updateMovement(dt){
   const moving=desired.lengthSq()>0.001;
   if(moving){
     avatarWalkTime+=frameDt*(keys.has('KeyF')||touchSprint?12:7);
-    visitorAvatar.rotation.y=Math.atan2(desired.x,desired.z)+AVATAR_FORWARD_OFFSET;
+  }
+  /* FPS-style third person: the body follows camera yaw, never the signed movement
+     vector. W advances, S backpedals, and A/D strafe without flipping the body. */
+  if(thirdPerson && forward.lengthSq()>0.001){
+    const targetYaw=Math.atan2(forward.x,forward.z)+(visitorAvatar.userData.forwardOffset??0);
+    visitorAvatar.rotation.y=targetYaw;
   }
   const swing=moving?Math.sin(avatarWalkTime)*0.42:0;
   const {arms,legs}=visitorAvatar.userData.limbs;
