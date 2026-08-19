@@ -80,6 +80,11 @@ let thirdPerson = false;
 let avatarWalkTime = 0;
 let avatarJumpBlend = 0;
 let lastFloorHeight = null;
+let orbitYaw = 0;
+let orbitPitch = 0.38;
+const ORBIT_DISTANCE = 6.2;
+const ORBIT_MIN_PITCH = -0.12;
+const ORBIT_MAX_PITCH = 1.05;
 
 function createVisitorAvatar(){
   const group = new THREE.Group();
@@ -198,6 +203,11 @@ function returnToAtlas(){
 }
 exitButton.addEventListener('click', returnToAtlas);
 function setThirdPerson(active){
+  if(active&&!thirdPerson){
+    camera.getWorldDirection(forward);
+    orbitYaw=Math.atan2(forward.x,forward.z);
+    orbitPitch=THREE.MathUtils.clamp(-Math.asin(THREE.MathUtils.clamp(forward.y,-1,1)),ORBIT_MIN_PITCH,ORBIT_MAX_PITCH);
+  }
   thirdPerson=active;
   visitorAvatar.visible=active;
   viewToggle.setAttribute('aria-pressed',String(active));
@@ -247,6 +257,11 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => keys.delete(e.code));
 addEventListener('blur', () => { keys.clear(); touchSprint = false; sprintButton?.classList.remove('active'); });
+document.addEventListener('mousemove',event=>{
+  if(!thirdPerson||!controls.isLocked||!experienceActive)return;
+  orbitYaw-=event.movementX*0.0024;
+  orbitPitch=THREE.MathUtils.clamp(orbitPitch+event.movementY*0.0022,ORBIT_MIN_PITCH,ORBIT_MAX_PITCH);
+});
 
 function jump(){
   if (experienceActive && grounded) {
@@ -285,10 +300,16 @@ if (touchMode) {
   });
   lookZone.addEventListener('pointermove', event => {
     if (event.pointerId !== lookPointer || !experienceActive) return;
-    camera.rotation.order = 'YXZ';
-    camera.rotation.y -= (event.clientX - lastLookX) * 0.004;
-    camera.rotation.x -= (event.clientY - lastLookY) * 0.004;
-    camera.rotation.x = THREE.MathUtils.clamp(camera.rotation.x, -Math.PI * 0.48, Math.PI * 0.48);
+    const deltaX=event.clientX-lastLookX,deltaY=event.clientY-lastLookY;
+    if(thirdPerson){
+      orbitYaw-=deltaX*0.004;
+      orbitPitch=THREE.MathUtils.clamp(orbitPitch+deltaY*0.004,ORBIT_MIN_PITCH,ORBIT_MAX_PITCH);
+    }else{
+      camera.rotation.order = 'YXZ';
+      camera.rotation.y -= deltaX * 0.004;
+      camera.rotation.x -= deltaY * 0.004;
+      camera.rotation.x = THREE.MathUtils.clamp(camera.rotation.x, -Math.PI * 0.48, Math.PI * 0.48);
+    }
     lastLookX = event.clientX; lastLookY = event.clientY;
   });
   const stopLook = event => { if (event.pointerId === lookPointer) lookPointer = null; };
@@ -526,10 +547,11 @@ function updateView(){
   const gaitLift=grounded&&desired.lengthSq()>0.001?Math.abs(Math.sin(avatarWalkTime*2))*0.025:0;
   visitorAvatar.position.set(playerPosition.x,playerPosition.y-EYE_HEIGHT+gaitLift,playerPosition.z);
   if(!thirdPerson){ camera.position.copy(playerPosition); return; }
-  camera.getWorldDirection(forward); forward.y=0;
-  if(forward.lengthSq()<0.001) forward.set(0,0,-1); else forward.normalize();
+  forward.set(Math.sin(orbitYaw),0,Math.cos(orbitYaw));
   const target=playerPosition.clone(); target.y-=0.55;
-  const wanted=playerPosition.clone().addScaledVector(forward,-5.5); wanted.y+=2.4;
+  const horizontalDistance=Math.cos(orbitPitch)*ORBIT_DISTANCE;
+  const wanted=target.clone().addScaledVector(forward,-horizontalDistance);
+  wanted.y+=Math.sin(orbitPitch)*ORBIT_DISTANCE;
   const cameraRay=wanted.clone().sub(target);
   const cameraDistance=cameraRay.length(); cameraRay.normalize();
   raycaster.set(target,cameraRay); raycaster.far=cameraDistance;
