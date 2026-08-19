@@ -5,6 +5,9 @@ body{background:#17120c;color:var(--stone);font-family:'Noto Sans KR',sans-serif
 canvas{display:block;width:100%;height:100%;touch-action:none}
 #exitExperience{position:fixed;z-index:30;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));width:48px;height:48px;border:1px solid #f0c65a99;border-radius:50%;background:#17110de6;color:#fff;font-size:32px;line-height:42px;cursor:pointer;box-shadow:0 6px 24px #0008}
 #exitExperience:hover,#exitExperience:focus-visible{background:var(--gold);color:var(--ink);outline:none}
+#viewToggle{position:fixed;z-index:30;top:max(74px,calc(env(safe-area-inset-top) + 58px));right:max(12px,env(safe-area-inset-right));min-width:64px;height:38px;padding:0 11px;border:1px solid #f0c65a99;border-radius:19px;background:#17110de6;color:#fff;font:700 12px 'Noto Sans KR',sans-serif;cursor:pointer;box-shadow:0 5px 18px #0008}
+#viewToggle:hover,#viewToggle:focus-visible,#viewToggle[aria-pressed="true"]{background:var(--gold);color:var(--ink);outline:none}
+#viewToggle:disabled{opacity:.42;cursor:wait}
 #status,#instructions{position:fixed;z-index:10;background:#17110dcc;border:1px solid #f0c65a55;backdrop-filter:blur(9px);border-radius:10px}
 #status{top:max(16px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left));padding:10px 14px;display:flex;flex-direction:column;gap:3px}
 #status strong{font-family:'Noto Serif KR',serif;color:var(--gold)}
@@ -29,6 +32,7 @@ body.locked #crosshair{display:block}
 .touchHelp,#touchControls{display:none}
 @media (hover:none),(pointer:coarse){
   #status{max-width:calc(100% - 88px)}
+  #viewToggle{top:max(70px,calc(env(safe-area-inset-top) + 54px));right:max(8px,env(safe-area-inset-right));height:42px}
   #instructions{white-space:normal;width:calc(100% - 32px);text-align:center;bottom:max(8px,env(safe-area-inset-bottom));pointer-events:none}
   .desktopHelp{display:none}.touchHelp{display:inline}
   body.touch-active #touchControls{display:block}

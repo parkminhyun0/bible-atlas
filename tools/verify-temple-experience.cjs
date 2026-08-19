@@ -16,6 +16,10 @@ const checks = [
   ['coarse pointer responsive UI', css.includes('(pointer:coarse)') && css.includes('body.touch-active #touchControls')],
   ['safe area support', css.includes('env(safe-area-inset-left)') && css.includes('env(safe-area-inset-right)')],
   ['mobile render cap', js.includes('touchMode ? 1.5 : 2')],
+  ['first/third-person toggle', html.includes('id="viewToggle"') && js.includes('function setThirdPerson(')],
+  ['procedural visitor avatar', js.includes('function createVisitorAvatar()') && js.includes("group.name = 'visitorAvatar'")],
+  ['walk/run limb animation', js.includes('avatarWalkTime') && js.includes('visitorAvatar.userData.limbs')],
+  ['third-person wall-safe chase camera', js.includes('function updateView()') && js.includes('safeDistance')],
 ];
 
 let failed = 0;
