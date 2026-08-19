@@ -20,6 +20,8 @@ const checks = [
   ['procedural visitor avatar', js.includes('function createVisitorAvatar()') && js.includes("group.name = 'visitorAvatar'")],
   ['walk/run limb animation', js.includes('avatarWalkTime') && js.includes('visitorAvatar.userData.limbs')],
   ['third-person wall-safe chase camera', js.includes('function updateView()') && js.includes('safeDistance')],
+  ['reference-derived visitor material', js.includes('visitor-cloak-weave-v1.png') && js.includes('scarfCap') && js.includes('pouch')],
+  ['continuous indoor safety floor', js.includes('MAX_INTERIOR_FLOOR_DROP') && js.includes('hasNearbyRoof') && js.includes('lastFloorHeight')],
 ];
 
 let failed = 0;

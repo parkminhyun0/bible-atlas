@@ -11,6 +11,8 @@ const MAX_STEP_HEIGHT = 0.65; // 계단 자동 승단. 역사 치수가 아닌 �
 const MAX_AUTO_CLIMB_HEIGHT = 1.05; // 낮은 턱을 자연스럽게 넘는 보행 보조
 const GRAVITY = 22;
 const JUMP_SPEED = 8.6;
+const MAX_INTERIOR_FLOOR_DROP = 1.15; // 내부 메시 틈을 통한 수직 추락만 차단한다.
+const AVATAR_TEXTURE_URL = './assets/herod-temple/character/visitor-cloak-weave-v1.png?v=20260819a';
 const touchMode = matchMedia('(hover: none), (pointer: coarse)').matches;
 /* openbibleinfo vendor/3d-temple-mount src/40-data.js PLACE_VIEWS.gentiles.
    이방인의 뜰 시작점을 새로 추정하지 않고 검증된 기존 시점을 그대로 쓴다. */
@@ -73,31 +75,67 @@ let touchSprint = false;
 const touchMove = new THREE.Vector2();
 let thirdPerson = false;
 let avatarWalkTime = 0;
+let lastFloorHeight = null;
 
 function createVisitorAvatar(){
   const group = new THREE.Group();
   group.name = 'visitorAvatar';
-  const cloth = new THREE.MeshStandardMaterial({color:0xb85f3d,roughness:0.88});
-  const trim = new THREE.MeshStandardMaterial({color:0xe4c98a,roughness:0.8});
-  const skin = new THREE.MeshStandardMaterial({color:0xa96f4f,roughness:0.92});
-  const leather = new THREE.MeshStandardMaterial({color:0x39251b,roughness:0.95});
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.39,0.9,8),cloth);
-  body.position.y=1.05; group.add(body);
-  const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.275,0.275,0.07,8),trim);
-  belt.position.y=1.12; group.add(belt);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.19,10,8),skin);
+  const weave = new THREE.TextureLoader().load(AVATAR_TEXTURE_URL);
+  weave.colorSpace = THREE.SRGBColorSpace;
+  weave.wrapS = weave.wrapT = THREE.RepeatWrapping;
+  weave.repeat.set(2,3);
+  const cloak = new THREE.MeshStandardMaterial({color:0xb9aa91,map:weave,roughness:0.96,side:THREE.DoubleSide});
+  const tunic = new THREE.MeshStandardMaterial({color:0xe0d0ad,roughness:0.94});
+  const headcloth = new THREE.MeshStandardMaterial({color:0xbcae97,roughness:0.95});
+  const skin = new THREE.MeshStandardMaterial({color:0x966044,roughness:0.92});
+  const hairMat = new THREE.MeshStandardMaterial({color:0x211713,roughness:0.98});
+  const leather = new THREE.MeshStandardMaterial({color:0x4b3022,roughness:0.95});
+
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.38,1.08,12),tunic);
+  body.position.y=0.98; group.add(body);
+  const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.37,0.43,0.55,12),tunic);
+  skirt.position.y=0.48; group.add(skirt);
+  const shoulderWrap = new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.35,0.32,12,1,true),cloak);
+  shoulderWrap.position.y=1.33; group.add(shoulderWrap);
+  const backCloak = new THREE.Mesh(new THREE.PlaneGeometry(0.82,1.28,3,5),cloak);
+  backCloak.position.set(0,0.77,-0.27); group.add(backCloak);
+  for(const side of [-1,1]){
+    const frontPanel = new THREE.Mesh(new THREE.PlaneGeometry(0.31,1.12,2,5),cloak);
+    frontPanel.position.set(side*0.2,0.82,0.29); frontPanel.rotation.y=side*0.12; group.add(frontPanel);
+  }
+  const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,0.08,12),leather);
+  belt.position.y=1.02; group.add(belt);
+  const strap = new THREE.Mesh(new THREE.BoxGeometry(0.055,0.9,0.035),leather);
+  strap.position.set(-0.08,1.18,0.34); strap.rotation.z=-0.48; group.add(strap);
+  const pouch = new THREE.Mesh(new THREE.BoxGeometry(0.28,0.3,0.13),leather);
+  pouch.position.set(0.34,0.9,0.28); group.add(pouch);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.19,14,10),skin);
   head.position.y=1.72; group.add(head);
-  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.195,10,6,0,Math.PI*2,0,Math.PI*0.56),leather);
-  hair.position.y=1.76; group.add(hair);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.045,0.12,7),skin);
+  nose.rotation.x=Math.PI/2; nose.position.set(0,1.72,0.19); group.add(nose);
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.202,12,8,0,Math.PI*2,0,Math.PI*0.68),hairMat);
+  hair.position.y=1.77; group.add(hair);
+  const beard = new THREE.Mesh(new THREE.ConeGeometry(0.17,0.38,10),hairMat);
+  beard.position.set(0,1.5,0.13); group.add(beard);
+  const scarfCap = new THREE.Mesh(new THREE.SphereGeometry(0.215,12,8,0,Math.PI*2,0,Math.PI*0.56),headcloth);
+  scarfCap.position.y=1.82; group.add(scarfCap);
+  const scarfBand = new THREE.Mesh(new THREE.TorusGeometry(0.202,0.025,6,16),headcloth);
+  scarfBand.rotation.x=Math.PI/2; scarfBand.position.y=1.77; group.add(scarfBand);
+  const scarfTail = new THREE.Mesh(new THREE.PlaneGeometry(0.2,0.48,1,3),headcloth);
+  scarfTail.position.set(0.1,1.56,-0.21); scarfTail.rotation.z=-0.15; group.add(scarfTail);
+
   const limbs={arms:[],legs:[]};
   for(const side of [-1,1]){
-    const arm=new THREE.Group(); arm.position.set(side*0.31,1.38,0);
-    const armMesh=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.065,0.68,7),skin);
-    armMesh.position.y=-0.31; arm.add(armMesh); group.add(arm); limbs.arms.push(arm);
+    const arm=new THREE.Group(); arm.position.set(side*0.34,1.35,0);
+    const sleeve=new THREE.Mesh(new THREE.CylinderGeometry(0.105,0.085,0.48,8),tunic);
+    sleeve.position.y=-0.21; arm.add(sleeve);
+    const hand=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.06,0.3,8),skin);
+    hand.position.y=-0.58; arm.add(hand); group.add(arm); limbs.arms.push(arm);
     const leg=new THREE.Group(); leg.position.set(side*0.14,0.68,0);
-    const legMesh=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.075,0.68,7),skin);
+    const legMesh=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.075,0.62,8),skin);
     legMesh.position.y=-0.31; leg.add(legMesh);
-    const foot=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.1,0.32),leather);
+    const foot=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.09,0.34),leather);
     foot.position.set(0,-0.66,0.07); leg.add(foot); group.add(leg); limbs.legs.push(leg);
   }
   group.userData.limbs=limbs;
@@ -221,13 +259,20 @@ if (touchMode) {
   jumpButton.addEventListener('pointercancel', () => jumpButton.classList.remove('active'));
 }
 
-function floorHeightAt(position){
+function floorHeightAt(position, referenceFloor = null){
   if (!bounds) return null;
   raycaster.set(new THREE.Vector3(position.x, bounds.max.y + 5, position.z), down);
   raycaster.far = bounds.max.y - bounds.min.y + 15;
   const hits = raycaster.intersectObjects(collisionMeshes, false);
   const belowEye = hits.find(hit => hit.point.y <= position.y - EYE_HEIGHT * 0.2);
-  return belowEye ? belowEye.point.y : null;
+  if (!belowEye) return null;
+  const hasNearbyRoof = hits.some(hit => hit.point.y > position.y + 0.5 && hit.point.y < position.y + 30);
+  if (referenceFloor != null && hasNearbyRoof && referenceFloor - belowEye.point.y > MAX_INTERIOR_FLOOR_DROP) {
+    /* Box형 건물의 얇은 시각 바닥 틈 아래에 더 낮은 외부 바닥이 잡히더라도,
+       실내에서는 마지막 연속 바닥 높이를 충돌 바닥으로 이어 붙인다. */
+    return referenceFloor;
+  }
+  return belowEye.point.y;
 }
 
 function blocked(origin, direction, distance, eyeDrop = EYE_HEIGHT * 0.42){
@@ -264,6 +309,7 @@ function applySpawn(){
   verticalVelocity = 0;
   grounded = true;
   lastSafePosition = playerPosition.clone();
+  lastFloorHeight = floorHeightAt(playerPosition) ?? playerPosition.y - EYE_HEIGHT;
 }
 
 function registerInteractiveNode(object){
@@ -353,9 +399,9 @@ function updateMovement(dt){
   if (desired.lengthSq()) {
     desired.normalize();
     const distance = (keys.has('KeyF') || touchSprint ? SPRINT_SPEED : MOVE_SPEED) * frameDt;
-    const currentFloor = floorHeightAt(playerPosition);
+    const currentFloor = floorHeightAt(playerPosition,lastFloorHeight);
     const candidate = playerPosition.clone().addScaledVector(desired, distance);
-    const nextFloor = floorHeightAt(candidate);
+    const nextFloor = floorHeightAt(candidate,currentFloor);
     const stepRise = currentFloor != null && nextFloor != null ? nextFloor - currentFloor : 0;
     const waistBlocked = blocked(playerPosition, desired, distance);
     const headBlocked = blocked(playerPosition, desired, distance, EYE_HEIGHT * 0.08);
@@ -373,7 +419,7 @@ function updateMovement(dt){
     }
   }
 
-  const floor = floorHeightAt(playerPosition);
+  const floor = floorHeightAt(playerPosition,lastFloorHeight);
   if (floor != null) {
     const floorEye = floor + EYE_HEIGHT;
     if (grounded && verticalVelocity <= 0) {
@@ -387,12 +433,16 @@ function updateMovement(dt){
         grounded = true;
       }
     }
-    if (grounded) lastSafePosition = playerPosition.clone();
+    if (grounded) {
+      lastSafePosition = playerPosition.clone();
+      lastFloorHeight = floor;
+    }
   } else {
     /* 역사 지형 메시의 유효 경계 밖에는 바닥이 없다. 추락시키지 않고 마지막
        검증된 보행 지점으로 즉시 되돌려 체험 영역 경계를 명확히 한다. */
     if (lastSafePosition) {
       playerPosition.copy(lastSafePosition);
+      lastFloorHeight = lastSafePosition.y - EYE_HEIGHT;
       verticalVelocity = 0;
       grounded = true;
       setStatus('체험 영역의 경계입니다 · 안전한 위치로 돌아왔습니다');
