@@ -22,6 +22,8 @@ const checks = [
   ['procedural visitor avatar', js.includes('function createVisitorAvatar()') && js.includes("group.name = 'visitorAvatar'")],
   ['walk/run limb animation', js.includes('avatarWalkTime') && js.includes('visitorAvatar.userData.limbs')],
   ['third-person wall-safe chase camera', js.includes('function updateView()') && js.includes('safeDistance')],
+  ['free third-person orbit camera', ['orbitYaw','orbitPitch','ORBIT_DISTANCE','movementX','ORBIT_MIN_PITCH'].every(token => js.includes(token))],
+  ['touch orbit parity', js.includes('if(thirdPerson)') && js.includes('orbitYaw-=deltaX*0.004')],
   ['reference-derived visitor material', js.includes('visitor-cloak-weave-v1.png') && js.includes('scarfCap') && js.includes('pouch')],
   ['device-specific realistic visitor GLBs', fs.existsSync(avatarHigh) && fs.existsSync(avatarMobile) && js.includes('AVATAR_MODEL_URL')],
   ['realistic visitor safe fallback', js.includes('loadRealisticVisitorAvatar') && js.includes('keeping procedural fallback')],
