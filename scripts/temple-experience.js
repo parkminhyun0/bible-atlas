@@ -169,6 +169,11 @@ function loadRealisticVisitorAvatar(){
       console.warn('Visitor GLB is missing runtime limb pivots; keeping procedural fallback.');
       return;
     }
+    [...arms,...legs].forEach(node => {
+      // A glTF bone's imported local rotation is its anatomical rest pose.
+      // Walking offsets must be additive; zeroing this value folds the skinned body.
+      node.userData.walkRestRotationX = node.rotation.x;
+    });
     loaded.userData.limbs = {arms,legs};
     loaded.position.copy(visitorAvatar.position);
     loaded.rotation.copy(visitorAvatar.rotation);
@@ -490,12 +495,13 @@ function updateMovement(dt){
     avatarWalkTime+=frameDt*(keys.has('KeyF')||touchSprint?12:7);
     visitorAvatar.rotation.y=Math.atan2(desired.x,desired.z)+AVATAR_FORWARD_OFFSET;
   }
-  const swing=moving?Math.sin(avatarWalkTime)*0.65:0;
+  const swing=moving?Math.sin(avatarWalkTime)*0.42:0;
   const {arms,legs}=visitorAvatar.userData.limbs;
-  arms[0].rotation.x=THREE.MathUtils.damp(arms[0].rotation.x,swing,10,frameDt);
-  arms[1].rotation.x=THREE.MathUtils.damp(arms[1].rotation.x,-swing,10,frameDt);
-  legs[0].rotation.x=THREE.MathUtils.damp(legs[0].rotation.x,-swing,10,frameDt);
-  legs[1].rotation.x=THREE.MathUtils.damp(legs[1].rotation.x,swing,10,frameDt);
+  const restX=node=>node.userData.walkRestRotationX??0;
+  arms[0].rotation.x=THREE.MathUtils.damp(arms[0].rotation.x,restX(arms[0])+swing,10,frameDt);
+  arms[1].rotation.x=THREE.MathUtils.damp(arms[1].rotation.x,restX(arms[1])-swing,10,frameDt);
+  legs[0].rotation.x=THREE.MathUtils.damp(legs[0].rotation.x,restX(legs[0])-swing,10,frameDt);
+  legs[1].rotation.x=THREE.MathUtils.damp(legs[1].rotation.x,restX(legs[1])+swing,10,frameDt);
 }
 
 function updateView(){
