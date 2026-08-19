@@ -15,8 +15,8 @@ const MAX_INTERIOR_FLOOR_DROP = 1.15; // 내부 메시 틈을 통한 수직 추�
 const AVATAR_TEXTURE_URL = './assets/herod-temple/character/visitor-cloak-weave-v1.png?v=20260819a';
 const touchMode = matchMedia('(hover: none), (pointer: coarse)').matches;
 const AVATAR_MODEL_URL = touchMode
-  ? './assets/herod-temple/character/visitor-realistic-mobile.glb?v=20260819c'
-  : './assets/herod-temple/character/visitor-realistic-high.glb?v=20260819c';
+  ? './assets/herod-temple/character/visitor-realistic-mobile.glb?v=20260819d'
+  : './assets/herod-temple/character/visitor-realistic-high.glb?v=20260819d';
 /* openbibleinfo vendor/3d-temple-mount src/40-data.js PLACE_VIEWS.gentiles.
    이방인의 뜰 시작점을 새로 추정하지 않고 검증된 기존 시점을 그대로 쓴다. */
 const GENTILES_SPAWN = { position:[186.8, 0, 321.2], lookAt:[104, 26, 227] };
@@ -175,7 +175,7 @@ function loadRealisticVisitorAvatar(){
       node.userData.walkRestRotationX = node.rotation.x;
     });
     loaded.userData.limbs = {arms,legs};
-    loaded.userData.forwardOffset = Math.PI; // Blender/glTF visitor faces local -Z
+    loaded.userData.forwardOffset = 0; // exported visitor faces local +Z
     loaded.position.copy(visitorAvatar.position);
     loaded.rotation.copy(visitorAvatar.rotation);
     scene.remove(visitorAvatar);
@@ -495,11 +495,12 @@ function updateMovement(dt){
   if(moving){
     avatarWalkTime+=frameDt*(keys.has('KeyF')||touchSprint?12:7);
   }
-  /* FPS-style third person: the body follows camera yaw, never the signed movement
-     vector. W advances, S backpedals, and A/D strafe without flipping the body. */
-  if(thirdPerson && forward.lengthSq()>0.001){
-    const targetYaw=Math.atan2(forward.x,forward.z)+(visitorAvatar.userData.forwardOffset??0);
-    visitorAvatar.rotation.y=targetYaw;
+  /* Action-game third person: movement stays camera-relative, while the body turns
+     smoothly toward the actual travel direction instead of sliding sideways. */
+  if(thirdPerson && moving){
+    const targetYaw=Math.atan2(desired.x,desired.z)+(visitorAvatar.userData.forwardOffset??0);
+    const yawDelta=Math.atan2(Math.sin(targetYaw-visitorAvatar.rotation.y),Math.cos(targetYaw-visitorAvatar.rotation.y));
+    visitorAvatar.rotation.y+=yawDelta*(1-Math.exp(-12*frameDt));
   }
   const swing=moving?Math.sin(avatarWalkTime)*0.42:0;
   const {arms,legs}=visitorAvatar.userData.limbs;

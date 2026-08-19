@@ -153,16 +153,26 @@ garments += [
     sphere('long_hair_back', (0, 0.09, 1.54), (0.16, 0.085, 0.23), HAIR),
     sphere('long_hair_left', (-0.145, 0.02, 1.54), (0.070, 0.065, 0.23), HAIR),
     sphere('long_hair_right', (0.145, 0.02, 1.54), (0.070, 0.065, 0.23), HAIR),
-    sphere('wrapped_headscarf', (0, 0, 1.80), (0.19, 0.16, 0.065), SCARF),
+    sphere('wrapped_headscarf', (0, 0, 1.79), (0.17, 0.14, 0.09), SCARF),
     rounded_box('headscarf_tail', (0.07, 0.16, 1.56), (0.065, 0.018, 0.23), SCARF,
                 rotation=(0, 0, -0.13), bevel=0.025),
 ]
-bpy.ops.mesh.primitive_torus_add(major_radius=0.18, minor_radius=0.025, major_segments=32, minor_segments=8,
+bpy.ops.mesh.primitive_torus_add(major_radius=0.16, minor_radius=0.018, major_segments=32, minor_segments=8,
                                  location=(0, 0, 1.76))
 headband = bpy.context.object
 headband.name = 'headscarf_band'
 headband.data.materials.append(SCARF)
 garments.append(headband)
+
+# The lower robe follows the character root as one cloth volume. Giving a skirt
+# automatic leg weights split it apart in motion, so it intentionally stays rigid.
+static_garments = [cone('knee_length_linen_robe', (0, 0, 0.68), 0.32, 0.215, 0.72, LINEN)]
+bpy.ops.mesh.primitive_torus_add(major_radius=0.215, minor_radius=0.012, major_segments=32, minor_segments=8,
+                                 location=(0, 0, 1.01))
+robe_belt = bpy.context.object
+robe_belt.name = 'narrow_leather_belt'
+robe_belt.data.materials.append(LEATHER)
+static_garments.append(robe_belt)
 # Lightweight deforming skeleton. Named bones are the browser runtime contract.
 bpy.ops.object.armature_add(enter_editmode=True, location=(0, 0, 0))
 rig = bpy.context.object
