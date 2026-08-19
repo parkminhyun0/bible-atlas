@@ -68,7 +68,6 @@ for obj in body_parts:
     obj.data.materials.append(EYE if '.eye.' in obj.name else SKIN)
     if '.eye.' not in obj.name:
         obj.data.materials.append(LINEN)
-        obj.data.materials.append(HAIR)
         # Use the anatomically correct body surface as a fitted under-tunic/trousers.
         # Head, forearms/hands, and feet remain skin; the covered torso/legs become linen.
         for poly in obj.data.polygons:
@@ -76,11 +75,7 @@ for obj in body_parts:
             exposed_head = center.z > 1.39
             exposed_hands = abs(center.x) > 0.27 and center.z < 1.10
             exposed_feet = center.z < 0.16
-            facial_hair = 1.43 < center.z < 1.64 and center.y < -0.075 and abs(center.x) < 0.15
-            if facial_hair:
-                poly.material_index = 2
-            else:
-                poly.material_index = 0 if exposed_head or exposed_hands or exposed_feet else 1
+            poly.material_index = 0 if exposed_head or exposed_hands or exposed_feet else 1
     if obj.type == 'MESH':
         for poly in obj.data.polygons:
             poly.use_smooth = True
@@ -132,9 +127,9 @@ garments = []
 
 # Head covering, layered hair, and beard follow the supplied four-view reference.
 garments += [
-    sphere('long_hair_back', (0, 0.09, 1.54), (0.16, 0.085, 0.23), HAIR),
-    sphere('long_hair_left', (-0.145, 0.02, 1.54), (0.070, 0.065, 0.23), HAIR),
-    sphere('long_hair_right', (0.145, 0.02, 1.54), (0.070, 0.065, 0.23), HAIR),
+    sphere('long_hair_back', (0, 0.09, 1.47), (0.15, 0.08, 0.18), HAIR),
+    sphere('long_hair_left', (-0.14, 0.02, 1.48), (0.060, 0.055, 0.18), HAIR),
+    sphere('long_hair_right', (0.14, 0.02, 1.48), (0.060, 0.055, 0.18), HAIR),
     sphere('wrapped_headscarf', (0, 0, 1.79), (0.17, 0.14, 0.09), SCARF),
     rounded_box('headscarf_tail', (0.07, 0.16, 1.56), (0.065, 0.018, 0.23), SCARF,
                 rotation=(0, 0, -0.13), bevel=0.025),

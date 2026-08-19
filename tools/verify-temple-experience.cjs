@@ -34,6 +34,7 @@ const checks = [
   ['skinned avatar preserves anatomical rest pose', js.includes('walkRestRotationX') && js.includes('restX(node)+offset')],
   ['articulated gait and jump pose', ['forearmLeft','shinLeft','avatarJumpBlend','gaitLift','poseX(shins[0]'].every(token => js.includes(token))],
   ['continuous indoor safety floor', js.includes('MAX_INTERIOR_FLOOR_DROP') && js.includes('hasNearbyRoof') && js.includes('lastFloorHeight')],
+  ['sanctuary floor derived from GLB bounds', js.includes("getObjectByName('sanct')") && js.includes('sanctuarySafetyFloorDerivedFromSanct') && js.includes('box.min.y+0.03')],
 ];
 
 let failed = 0;
