@@ -12,11 +12,12 @@ const MAX_AUTO_CLIMB_HEIGHT = 1.05; // 낮은 턱을 자연스럽게 넘는 보�
 const GRAVITY = 22;
 const JUMP_SPEED = 8.6;
 const MAX_INTERIOR_FLOOR_DROP = 1.15; // 내부 메시 틈을 통한 수직 추락만 차단한다.
+const AVATAR_FORWARD_OFFSET = Math.PI; // Blender GLB의 정면(+Z)을 Three.js 이동 정면(-Z)에 맞춘다.
 const AVATAR_TEXTURE_URL = './assets/herod-temple/character/visitor-cloak-weave-v1.png?v=20260819a';
 const touchMode = matchMedia('(hover: none), (pointer: coarse)').matches;
 const AVATAR_MODEL_URL = touchMode
-  ? './assets/herod-temple/character/visitor-realistic-mobile.glb?v=20260819a'
-  : './assets/herod-temple/character/visitor-realistic-high.glb?v=20260819a';
+  ? './assets/herod-temple/character/visitor-realistic-mobile.glb?v=20260819b'
+  : './assets/herod-temple/character/visitor-realistic-high.glb?v=20260819b';
 /* openbibleinfo vendor/3d-temple-mount src/40-data.js PLACE_VIEWS.gentiles.
    이방인의 뜰 시작점을 새로 추정하지 않고 검증된 기존 시점을 그대로 쓴다. */
 const GENTILES_SPAWN = { position:[186.8, 0, 321.2], lookAt:[104, 26, 227] };
@@ -487,7 +488,7 @@ function updateMovement(dt){
   const moving=desired.lengthSq()>0.001;
   if(moving){
     avatarWalkTime+=frameDt*(keys.has('KeyF')||touchSprint?12:7);
-    visitorAvatar.rotation.y=Math.atan2(desired.x,desired.z);
+    visitorAvatar.rotation.y=Math.atan2(desired.x,desired.z)+AVATAR_FORWARD_OFFSET;
   }
   const swing=moving?Math.sin(avatarWalkTime)*0.65:0;
   const {arms,legs}=visitorAvatar.userData.limbs;

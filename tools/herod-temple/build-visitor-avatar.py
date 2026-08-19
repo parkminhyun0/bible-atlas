@@ -1,27 +1,43 @@
+"""Build the BibleAtlas visitor from Blender's CC0 Human Base Meshes v1.4.1.
+
+Source: https://www.blender.org/download/demo-files/ (Human Base Meshes, CC0)
+The source bundle is intentionally not committed. Pass --base-blend to its .blend file.
+"""
 import bpy
 import math
 import os
 import sys
-from mathutils import Vector
 
 
 def arg(name, default=None):
     args = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
-    if name in args and args.index(name) + 1 < len(args):
-        return args[args.index(name) + 1]
-    return default
+    return args[args.index(name) + 1] if name in args and args.index(name) + 1 < len(args) else default
 
 
 OUTPUT = os.path.abspath(arg('--output', 'visitor-realistic.glb'))
+BASE_BLEND = os.path.abspath(arg('--base-blend', 'human_base_meshes_bundle.blend'))
 LOD = arg('--lod', 'high')
 HIGH = LOD == 'high'
-SEG = 24 if HIGH else 14
-RINGS = 16 if HIGH else 8
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 WEAVE = os.path.join(ROOT, 'assets', 'herod-temple', 'character', 'visitor-cloak-weave-v1.png')
 
+if not os.path.exists(BASE_BLEND):
+    raise FileNotFoundError('Pass --base-blend from Blender Human Base Meshes v1.4.1 (CC0).')
+
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
+
+with bpy.data.libraries.load(BASE_BLEND, link=False) as (source, target):
+    wanted = {'GEO-body_male_realistic', 'GEO-body_male_realistic.eye.L', 'GEO-body_male_realistic.eye.R'}
+    target.objects = [name for name in source.objects if name in wanted]
+
+body_parts = []
+for obj in target.objects:
+    if obj:
+        bpy.context.collection.objects.link(obj)
+        obj.location.x += 2.2643022537
+        obj.scale *= 1.10
+        body_parts.append(obj)
 
 
 def material(name, color, roughness=0.9, texture=None):
@@ -35,142 +51,167 @@ def material(name, color, roughness=0.9, texture=None):
         image = bpy.data.images.load(texture, check_existing=True)
         tex = mat.node_tree.nodes.new('ShaderNodeTexImage')
         tex.image = image
-        tex.interpolation = 'Linear'
         mat.node_tree.links.new(tex.outputs['Color'], bsdf.inputs['Base Color'])
     return mat
 
 
-SKIN = material('skin_warm_olive', (0.43, 0.23, 0.14), 0.82)
-SKIN_LIGHT = material('skin_highlight', (0.58, 0.34, 0.22), 0.84)
-TUNIC = material('linen_cream', (0.70, 0.62, 0.47), 0.96)
-CLOAK = material('woven_taupe_cloak', (0.55, 0.48, 0.38), 0.98, WEAVE)
-SCARF = material('linen_headscarf', (0.62, 0.55, 0.45), 0.96)
-HAIR = material('dark_hair', (0.045, 0.028, 0.022), 0.98)
-LEATHER = material('brown_leather', (0.16, 0.075, 0.038), 0.88)
-EYE = material('dark_eye', (0.018, 0.012, 0.009), 0.7)
+SKIN = material('skin_warm_olive', (0.38, 0.20, 0.12), 0.78)
+EYE = material('eyes_dark_brown', (0.025, 0.018, 0.014), 0.55)
+LINEN = material('linen_cream', (0.68, 0.59, 0.43), 0.94)
+CLOAK = material('woven_taupe_cloak', (0.47, 0.40, 0.31), 0.98, WEAVE)
+SCARF = material('headscarf_linen', (0.63, 0.56, 0.45), 0.96)
+HAIR = material('hair_dark_brown', (0.055, 0.032, 0.022), 0.97)
+LEATHER = material('aged_leather', (0.20, 0.105, 0.055), 0.91)
+
+for obj in body_parts:
+    obj.data.materials.clear()
+    obj.data.materials.append(EYE if '.eye.' in obj.name else SKIN)
+    if '.eye.' not in obj.name:
+        obj.data.materials.append(LINEN)
+        # Use the anatomically correct body surface as a fitted under-tunic/trousers.
+        # Head, forearms/hands, and feet remain skin; the covered torso/legs become linen.
+        for poly in obj.data.polygons:
+            center = poly.center
+            exposed_head = center.z > 1.39
+            exposed_hands = abs(center.x) > 0.27 and center.z < 1.10
+            exposed_feet = center.z < 0.16
+            poly.material_index = 0 if exposed_head or exposed_hands or exposed_feet else 1
+    if obj.type == 'MESH':
+        for poly in obj.data.polygons:
+            poly.use_smooth = True
+        multires = next((m for m in obj.modifiers if m.type == 'MULTIRES'), None)
+        if multires:
+            multires.levels = 0 if not HIGH else min(1, multires.total_levels)
+            multires.render_levels = multires.levels
 
 
-def finish(obj, mat, name, parent=None, bevel=0.0):
-    obj.name = name
-    obj.data.materials.append(mat)
-    if hasattr(obj.data, 'polygons'):
+def smooth(obj, bevel=0.0):
+    if obj.type == 'MESH':
         for poly in obj.data.polygons:
             poly.use_smooth = True
     if bevel:
-        mod = obj.modifiers.new('soft_edges', 'BEVEL')
+        mod = obj.modifiers.new('soft garment edges', 'BEVEL')
         mod.width = bevel
-        mod.segments = 2 if HIGH else 1
-    if parent:
-        world = obj.matrix_world.copy()
-        obj.parent = parent
-        obj.matrix_world = world
+        mod.segments = 3 if HIGH else 2
     return obj
 
 
-def sphere(name, loc, scale, mat, parent=None):
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=SEG, ring_count=RINGS, location=loc)
+def cone(name, loc, r1, r2, depth, mat):
+    bpy.ops.mesh.primitive_cone_add(vertices=32 if HIGH else 20, radius1=r1, radius2=r2, depth=depth, location=loc)
     obj = bpy.context.object
-    obj.scale = scale
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    return finish(obj, mat, name, parent)
+    obj.name = name
+    obj.data.materials.append(mat)
+    return smooth(obj, 0.018)
 
 
-def cylinder(name, loc, radius, depth, mat, parent=None, vertices=None, scale=(1, 1, 1)):
-    bpy.ops.mesh.primitive_cylinder_add(vertices=vertices or SEG, radius=radius, depth=depth, location=loc)
+def sphere(name, loc, scale, mat):
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=32 if HIGH else 20, ring_count=20 if HIGH else 12, location=loc)
     obj = bpy.context.object
+    obj.name = name
     obj.scale = scale
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    return finish(obj, mat, name, parent, 0.012 if HIGH else 0.006)
+    obj.data.materials.append(mat)
+    return smooth(obj)
 
 
-def cone(name, loc, r1, r2, depth, mat, parent=None):
-    bpy.ops.mesh.primitive_cone_add(vertices=SEG, radius1=r1, radius2=r2, depth=depth, location=loc)
-    return finish(bpy.context.object, mat, name, parent, 0.012 if HIGH else 0.006)
-
-
-def cube(name, loc, scale, mat, parent=None, rotation=(0, 0, 0), bevel=0.025):
+def rounded_box(name, loc, scale, mat, rotation=(0, 0, 0), bevel=0.035):
     bpy.ops.mesh.primitive_cube_add(location=loc, rotation=rotation)
     obj = bpy.context.object
+    obj.name = name
     obj.scale = scale
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    return finish(obj, mat, name, parent, bevel)
+    obj.data.materials.append(mat)
+    return smooth(obj, bevel)
 
 
-def empty(name, loc, parent=None):
-    obj = bpy.data.objects.new(name, None)
+def cape_mesh():
+    # A single rounded cloak silhouette avoids the rigid front/back box panels.
+    verts = [(-0.34, 0.12, 1.43), (0.34, 0.12, 1.43), (0.39, 0.14, 1.18),
+             (0.36, 0.16, 0.82), (0.25, 0.17, 0.45), (0, 0.18, 0.38),
+             (-0.25, 0.17, 0.45), (-0.36, 0.16, 0.82), (-0.39, 0.14, 1.18)]
+    mesh = bpy.data.meshes.new('woven_cape_mesh')
+    mesh.from_pydata(verts, [], [tuple(range(len(verts)))])
+    mesh.materials.append(CLOAK)
+    obj = bpy.data.objects.new('woven_cape', mesh)
     bpy.context.collection.objects.link(obj)
-    obj.location = loc
-    if parent:
-        obj.parent = parent
-    return obj
+    solid = obj.modifiers.new('cloth thickness', 'SOLIDIFY')
+    solid.thickness = 0.018
+    return smooth(obj, 0.045)
 
 
-root = empty('visitorAvatar', (0, 0, 0))
-torso = cone('torso_tunic', (0, 0, 1.13), 0.31, 0.24, 0.92, TUNIC, root)
-skirt = cone('linen_skirt', (0, 0, 0.60), 0.39, 0.30, 0.72, TUNIC, root)
-cylinder('leather_belt', (0, 0, 0.98), 0.315, 0.09, LEATHER, root)
+garments = []
+garments += [
+    cone('linen_tunic_hem', (0, 0, 0.76), 0.31, 0.25, 0.42, LINEN),
+    cape_mesh(),
+]
 
-# Cloak: rounded shoulder mantle, broad back drape, and two open front panels.
-sphere('cloak_shoulders', (0, -0.015, 1.37), (0.47, 0.30, 0.22), CLOAK, root)
-cube('cloak_back', (0, -0.205, 0.88), (0.44, 0.055, 0.59), CLOAK, root, bevel=0.06)
-for side in (-1, 1):
-    cube(f'cloak_front_{side:+d}', (side * 0.235, 0.245, 0.90), (0.18, 0.045, 0.53), CLOAK, root,
-         rotation=(0, side * 0.08, side * 0.035), bevel=0.045)
+# Head covering, layered hair, and beard follow the supplied four-view reference.
+garments += [
+    sphere('long_hair_back', (0, 0.09, 1.59), (0.18, 0.10, 0.30), HAIR),
+    sphere('long_hair_left', (-0.15, 0.02, 1.58), (0.085, 0.08, 0.29), HAIR),
+    sphere('long_hair_right', (0.15, 0.02, 1.58), (0.085, 0.08, 0.29), HAIR),
+    sphere('natural_full_beard', (0, -0.145, 1.53), (0.105, 0.042, 0.14), HAIR),
+    sphere('natural_moustache', (0, -0.17, 1.64), (0.075, 0.02, 0.018), HAIR),
+    sphere('wrapped_headscarf', (0, 0, 1.80), (0.19, 0.16, 0.065), SCARF),
+    rounded_box('headscarf_tail', (0.07, 0.16, 1.56), (0.065, 0.018, 0.23), SCARF,
+                rotation=(0, 0, -0.13), bevel=0.025),
+    rounded_box('cross_body_strap', (-0.06, -0.205, 1.18), (0.014, 0.012, 0.43), LEATHER,
+                rotation=(0, 0, -0.48), bevel=0.012),
+    rounded_box('leather_pouch', (0.29, -0.19, 0.91), (0.105, 0.04, 0.12), LEATHER, bevel=0.04),
+]
+bpy.ops.mesh.primitive_torus_add(major_radius=0.18, minor_radius=0.025, major_segments=32, minor_segments=8,
+                                 location=(0, 0, 1.76))
+headband = bpy.context.object
+headband.name = 'headscarf_band'
+headband.data.materials.append(SCARF)
+garments.append(headband)
+bpy.ops.mesh.primitive_torus_add(major_radius=0.285, minor_radius=0.035, major_segments=32, minor_segments=8,
+                                 location=(0, 0, 1.02))
+belt = bpy.context.object
+belt.name = 'leather_belt'
+belt.data.materials.append(LEATHER)
+garments.append(belt)
 
-# Cross-body strap and pouch from the reference.
-strap = cube('cross_body_strap', (-0.06, 0.30, 1.22), (0.025, 0.025, 0.48), LEATHER, root,
-             rotation=(0, 0, -0.48), bevel=0.01)
-cube('leather_pouch', (0.35, 0.26, 0.88), (0.16, 0.075, 0.17), LEATHER, root, bevel=0.035)
+# Lightweight deforming skeleton. Named bones are the browser runtime contract.
+bpy.ops.object.armature_add(enter_editmode=True, location=(0, 0, 0))
+rig = bpy.context.object
+rig.name = 'visitorRig'
+armature = rig.data
+armature.name = 'visitorRig'
+armature.edit_bones.remove(armature.edit_bones[0])
 
-# Head and face.
-sphere('head', (0, 0.01, 1.72), (0.185, 0.17, 0.22), SKIN_LIGHT, root)
-sphere('left_ear', (-0.19, 0.01, 1.72), (0.035, 0.025, 0.06), SKIN, root)
-sphere('right_ear', (0.19, 0.01, 1.72), (0.035, 0.025, 0.06), SKIN, root)
-sphere('nose', (0, 0.178, 1.71), (0.04, 0.065, 0.075), SKIN_LIGHT, root)
-for side in (-1, 1):
-    sphere(f'eye_{side:+d}', (side * 0.063, 0.168, 1.77), (0.022, 0.015, 0.014), EYE, root)
-    cube(f'brow_{side:+d}', (side * 0.062, 0.178, 1.807), (0.055, 0.009, 0.012), HAIR, root,
-         rotation=(0, 0, -side * 0.08), bevel=0.008)
 
-# Long dark hair and full beard.
-sphere('hair_cap', (0, -0.015, 1.82), (0.205, 0.18, 0.18), HAIR, root)
-for side in (-1, 1):
-    sphere(f'long_hair_{side:+d}', (side * 0.16, -0.065, 1.55), (0.105, 0.10, 0.34), HAIR, root)
-sphere('back_hair', (0, -0.15, 1.57), (0.17, 0.085, 0.34), HAIR, root)
-cone('full_beard', (0, 0.13, 1.51), 0.16, 0.10, 0.37, HAIR, root)
-sphere('moustache', (0, 0.183, 1.655), (0.105, 0.025, 0.035), HAIR, root)
+def bone(name, head, tail, parent=None):
+    item = armature.edit_bones.new(name)
+    item.head, item.tail = head, tail
+    item.parent = parent
+    return item
 
-# Wrapped linen head covering and rear tails.
-sphere('headscarf_cap', (0, -0.005, 1.855), (0.218, 0.19, 0.12), SCARF, root)
-cylinder('headscarf_band', (0, 0, 1.825), 0.213, 0.065, SCARF, root)
-cube('headscarf_tail_long', (0.06, -0.205, 1.57), (0.07, 0.018, 0.25), SCARF, root,
-     rotation=(0, 0, -0.18), bevel=0.02)
-cube('headscarf_tail_short', (-0.065, -0.21, 1.65), (0.055, 0.017, 0.17), SCARF, root,
-     rotation=(0, 0, 0.16), bevel=0.02)
 
-# Limb pivots are named for runtime walking/running animation.
+root_bone = bone('root', (0, 0, 0.08), (0, 0, 0.94))
+spine = bone('spine', (0, 0, 0.94), (0, 0, 1.54), root_bone)
+bone('head', (0, 0, 1.54), (0, 0, 1.86), spine)
 for side, label in ((-1, 'Left'), (1, 'Right')):
-    arm = empty(f'arm{label}', (side * 0.34, 0, 1.38), root)
-    cylinder(f'upper_sleeve_{label}', (side * 0.34, 0, 1.19), 0.105, 0.40, TUNIC, arm)
-    cylinder(f'forearm_{label}', (side * 0.34, 0.015, 0.87), 0.068, 0.32, SKIN, arm)
-    sphere(f'hand_{label}', (side * 0.34, 0.025, 0.68), (0.078, 0.06, 0.10), SKIN_LIGHT, arm)
+    arm = bone(f'arm{label}', (side * 0.25, 0, 1.43), (side * 0.39, 0, 1.10), spine)
+    bone(f'forearm{label}', (side * 0.39, 0, 1.10), (side * 0.42, 0, 0.77), arm)
+    leg = bone(f'leg{label}', (side * 0.14, 0, 0.93), (side * 0.14, 0, 0.50), root_bone)
+    bone(f'shin{label}', (side * 0.14, 0, 0.50), (side * 0.12, 0, 0.09), leg)
+bpy.ops.object.mode_set(mode='OBJECT')
 
-    leg = empty(f'leg{label}', (side * 0.135, 0, 0.70), root)
-    cylinder(f'lower_leg_{label}', (side * 0.135, 0, 0.36), 0.082, 0.58, SKIN, leg)
-    foot = cube(f'sandal_{label}', (side * 0.135, 0.075, 0.075), (0.105, 0.19, 0.055), LEATHER, leg, bevel=0.025)
-    cube(f'sandal_strap_{label}', (side * 0.135, 0.115, 0.13), (0.11, 0.035, 0.025), LEATHER, leg,
-         rotation=(0, 0, side * 0.25), bevel=0.01)
-
-# Keep runtime pivots and the full character root in the exported scene.
-bpy.context.view_layer.objects.active = torso
-for obj in bpy.context.scene.objects:
+# Body and garments receive automatic weights so walking bends the silhouette instead of swinging blocks.
+deform_objects = body_parts + garments
+bpy.ops.object.select_all(action='DESELECT')
+for obj in deform_objects:
     obj.select_set(True)
+rig.select_set(True)
+bpy.context.view_layer.objects.active = rig
+bpy.ops.object.parent_set(type='ARMATURE_AUTO')
 
 os.makedirs(os.path.dirname(OUTPUT), exist_ok=True)
+bpy.ops.object.select_all(action='SELECT')
 bpy.ops.export_scene.gltf(
     filepath=OUTPUT,
     export_format='GLB',
-    export_apply=True,
+    export_apply=False,
     export_yup=True,
     export_texcoords=True,
     export_normals=True,
