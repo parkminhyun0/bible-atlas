@@ -40,13 +40,15 @@ for obj in target.objects:
         body_parts.append(obj)
 
 
-def material(name, color, roughness=0.9, texture=None):
+def material(name, color, roughness=0.9, texture=None, metallic=0.0):
     mat = bpy.data.materials.new(name)
     mat.diffuse_color = (*color, 1)
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes.get('Principled BSDF')
     bsdf.inputs['Base Color'].default_value = (*color, 1)
     bsdf.inputs['Roughness'].default_value = roughness
+    if 'Metallic' in bsdf.inputs:
+        bsdf.inputs['Metallic'].default_value = metallic
     if texture and os.path.exists(texture):
         image = bpy.data.images.load(texture, check_existing=True)
         tex = mat.node_tree.nodes.new('ShaderNodeTexImage')
@@ -55,11 +57,11 @@ def material(name, color, roughness=0.9, texture=None):
     return mat
 
 
-SKIN = material('skin_warm_olive', (0.38, 0.20, 0.12), 0.78)
+SKIN = material('skin_warm_olive', (0.43, 0.245, 0.155), 0.72)
 EYE = material('eyes_dark_brown', (0.025, 0.018, 0.014), 0.55)
-LINEN = material('linen_cream', (0.68, 0.59, 0.43), 0.94)
+LINEN = material('linen_cream', (0.74, 0.68, 0.55), 0.92)
 CLOAK = material('woven_taupe_cloak', (0.47, 0.40, 0.31), 0.98, WEAVE)
-SCARF = material('headscarf_linen', (0.63, 0.56, 0.45), 0.96)
+SCARF = material('headscarf_linen', (0.70, 0.64, 0.53), 0.94)
 HAIR = material('hair_dark_brown', (0.055, 0.032, 0.022), 0.97)
 LEATHER = material('aged_leather', (0.20, 0.105, 0.055), 0.91)
 
@@ -123,32 +125,52 @@ def rounded_box(name, loc, scale, mat, rotation=(0, 0, 0), bevel=0.035):
     return smooth(obj, bevel)
 
 
+def flatten_depth(obj, factor):
+    """Convert primitive circular cloth volumes to a human torso cross-section."""
+    obj.scale.y *= factor
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    obj.select_set(False)
+    return obj
+
+
 garments = []
 
-# Head covering, layered hair, and beard follow the supplied four-view reference.
+# Keep cloth close to the anatomical mesh. Separate synthetic hair volumes were
+# visible as a ponytail and a detached dark dot beside the chin, so the wrapped
+# head cloth now supplies the clean silhouette without floating geometry.
 garments += [
-    sphere('long_hair_back', (0, 0.09, 1.47), (0.15, 0.08, 0.18), HAIR),
-    sphere('long_hair_left', (-0.14, 0.02, 1.48), (0.060, 0.055, 0.18), HAIR),
-    sphere('long_hair_right', (0.14, 0.02, 1.48), (0.060, 0.055, 0.18), HAIR),
-    sphere('wrapped_headscarf', (0, 0, 1.79), (0.17, 0.14, 0.09), SCARF),
-    rounded_box('headscarf_tail', (0.07, 0.16, 1.56), (0.065, 0.018, 0.23), SCARF,
-                rotation=(0, 0, -0.13), bevel=0.025),
+    sphere('wrapped_headscarf', (0, 0, 1.79), (0.148, 0.125, 0.070), SCARF),
+    rounded_box('headscarf_tail', (0.045, 0.145, 1.61), (0.040, 0.010, 0.145), SCARF,
+                rotation=(0, 0, -0.08), bevel=0.012),
 ]
-bpy.ops.mesh.primitive_torus_add(major_radius=0.16, minor_radius=0.018, major_segments=32, minor_segments=8,
+bpy.ops.mesh.primitive_torus_add(major_radius=0.148, minor_radius=0.012, major_segments=32, minor_segments=8,
                                  location=(0, 0, 1.76))
 headband = bpy.context.object
 headband.name = 'headscarf_band'
 headband.data.materials.append(SCARF)
 garments.append(headband)
 
+# A softly tapered, elliptical upper tunic hides the body-painted, skin-tight
+# chest silhouette and joins shoulders, waist, and lower robe as cloth.
+upper_tunic = cone('soft_linen_upper_tunic', (0, 0, 1.245), 0.225, 0.270, 0.53, LINEN)
+# The base anatomy projects about 0.32 m front-to-back at the chest. Keep a
+# small cloth clearance so the anatomy cannot poke through during animation.
+flatten_depth(upper_tunic, 0.72)
+garments.append(upper_tunic)
+
 # The lower robe follows the character root as one cloth volume. Giving a skirt
 # automatic leg weights split it apart in motion, so it intentionally stays rigid.
-static_garments = [cone('knee_length_linen_robe', (0, 0, 0.68), 0.32, 0.215, 0.72, LINEN)]
-bpy.ops.mesh.primitive_torus_add(major_radius=0.215, minor_radius=0.012, major_segments=32, minor_segments=8,
-                                 location=(0, 0, 1.01))
+lower_robe = cone('knee_length_linen_robe', (0, 0, 0.675), 0.275, 0.225, 0.75, LINEN)
+flatten_depth(lower_robe, 0.66)
+static_garments = [lower_robe]
+bpy.ops.mesh.primitive_torus_add(major_radius=0.225, minor_radius=0.010, major_segments=32, minor_segments=8,
+                                 location=(0, 0, 0.995))
 robe_belt = bpy.context.object
 robe_belt.name = 'narrow_leather_belt'
 robe_belt.data.materials.append(LEATHER)
+flatten_depth(robe_belt, 0.66)
 static_garments.append(robe_belt)
 # Lightweight deforming skeleton. Named bones are the browser runtime contract.
 bpy.ops.object.armature_add(enter_editmode=True, location=(0, 0, 0))
