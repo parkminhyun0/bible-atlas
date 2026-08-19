@@ -15,8 +15,8 @@ const MAX_INTERIOR_FLOOR_DROP = 1.15; // 내부 메시 틈을 통한 수직 추�
 const AVATAR_TEXTURE_URL = './assets/herod-temple/character/visitor-cloak-weave-v1.png?v=20260819a';
 const touchMode = matchMedia('(hover: none), (pointer: coarse)').matches;
 const AVATAR_MODEL_URL = touchMode
-  ? './assets/herod-temple/character/visitor-realistic-mobile.glb?v=20260819e'
-  : './assets/herod-temple/character/visitor-realistic-high.glb?v=20260819e';
+  ? './assets/herod-temple/character/visitor-realistic-mobile.glb?v=20260819f'
+  : './assets/herod-temple/character/visitor-realistic-high.glb?v=20260819f';
 /* openbibleinfo vendor/3d-temple-mount src/40-data.js PLACE_VIEWS.gentiles.
    이방인의 뜰 시작점을 새로 추정하지 않고 검증된 기존 시점을 그대로 쓴다. */
 const GENTILES_SPAWN = { position:[186.8, 0, 321.2], lookAt:[104, 26, 227] };
@@ -403,6 +403,24 @@ function registerInteractiveNode(object){
   interactiveDoors.push({object:owner,name,center,axis,sign,travel,amount:0,closed:owner.position.clone()});
 }
 
+function addSanctuarySafetyFloor(model){
+  const sanctuary=model.getObjectByName('sanct');
+  if(!sanctuary)return;
+  sanctuary.updateWorldMatrix(true,true);
+  const box=new THREE.Box3().setFromObject(sanctuary);
+  const size=box.getSize(new THREE.Vector3());
+  const center=box.getCenter(new THREE.Vector3());
+  if(!Number.isFinite(box.min.y)||size.x<=0||size.z<=0)return;
+  const material=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,colorWrite:false,side:THREE.DoubleSide});
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(size.x,size.z),material);
+  floor.name='sanctuarySafetyFloorDerivedFromSanct';
+  floor.rotation.x=-Math.PI/2;
+  floor.position.set(center.x,box.min.y+0.03,center.z);
+  floor.updateMatrixWorld(true);
+  scene.add(floor);
+  collisionMeshes.push(floor);
+}
+
 new GLTFLoader().load(MODEL_URL, gltf => {
   const model = gltf.scene;
   scene.add(model);
@@ -417,6 +435,7 @@ new GLTFLoader().load(MODEL_URL, gltf => {
     mats.forEach(mat => { if (mat) { mat.side = THREE.FrontSide; mat.needsUpdate = true; } });
     registerInteractiveNode(object);
   });
+  addSanctuarySafetyFloor(model);
   bounds = new THREE.Box3().setFromObject(model);
   applySpawn();
   modelReady = true;
