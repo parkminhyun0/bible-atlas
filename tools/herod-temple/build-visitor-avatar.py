@@ -68,6 +68,7 @@ for obj in body_parts:
     obj.data.materials.append(EYE if '.eye.' in obj.name else SKIN)
     if '.eye.' not in obj.name:
         obj.data.materials.append(LINEN)
+        obj.data.materials.append(HAIR)
         # Use the anatomically correct body surface as a fitted under-tunic/trousers.
         # Head, forearms/hands, and feet remain skin; the covered torso/legs become linen.
         for poly in obj.data.polygons:
@@ -75,7 +76,11 @@ for obj in body_parts:
             exposed_head = center.z > 1.39
             exposed_hands = abs(center.x) > 0.27 and center.z < 1.10
             exposed_feet = center.z < 0.16
-            poly.material_index = 0 if exposed_head or exposed_hands or exposed_feet else 1
+            facial_hair = 1.43 < center.z < 1.64 and center.y < -0.075 and abs(center.x) < 0.15
+            if facial_hair:
+                poly.material_index = 2
+            else:
+                poly.material_index = 0 if exposed_head or exposed_hands or exposed_feet else 1
     if obj.type == 'MESH':
         for poly in obj.data.polygons:
             poly.use_smooth = True
@@ -140,23 +145,17 @@ def cape_mesh():
 
 garments = []
 garments += [
-    cone('linen_tunic_hem', (0, 0, 0.76), 0.31, 0.25, 0.42, LINEN),
     cape_mesh(),
 ]
 
 # Head covering, layered hair, and beard follow the supplied four-view reference.
 garments += [
-    sphere('long_hair_back', (0, 0.09, 1.59), (0.18, 0.10, 0.30), HAIR),
-    sphere('long_hair_left', (-0.15, 0.02, 1.58), (0.085, 0.08, 0.29), HAIR),
-    sphere('long_hair_right', (0.15, 0.02, 1.58), (0.085, 0.08, 0.29), HAIR),
-    sphere('natural_full_beard', (0, -0.145, 1.53), (0.105, 0.042, 0.14), HAIR),
-    sphere('natural_moustache', (0, -0.17, 1.64), (0.075, 0.02, 0.018), HAIR),
+    sphere('long_hair_back', (0, 0.09, 1.54), (0.16, 0.085, 0.23), HAIR),
+    sphere('long_hair_left', (-0.145, 0.02, 1.54), (0.070, 0.065, 0.23), HAIR),
+    sphere('long_hair_right', (0.145, 0.02, 1.54), (0.070, 0.065, 0.23), HAIR),
     sphere('wrapped_headscarf', (0, 0, 1.80), (0.19, 0.16, 0.065), SCARF),
     rounded_box('headscarf_tail', (0.07, 0.16, 1.56), (0.065, 0.018, 0.23), SCARF,
                 rotation=(0, 0, -0.13), bevel=0.025),
-    rounded_box('cross_body_strap', (-0.06, -0.205, 1.18), (0.014, 0.012, 0.43), LEATHER,
-                rotation=(0, 0, -0.48), bevel=0.012),
-    rounded_box('leather_pouch', (0.29, -0.19, 0.91), (0.105, 0.04, 0.12), LEATHER, bevel=0.04),
 ]
 bpy.ops.mesh.primitive_torus_add(major_radius=0.18, minor_radius=0.025, major_segments=32, minor_segments=8,
                                  location=(0, 0, 1.76))
@@ -164,13 +163,6 @@ headband = bpy.context.object
 headband.name = 'headscarf_band'
 headband.data.materials.append(SCARF)
 garments.append(headband)
-bpy.ops.mesh.primitive_torus_add(major_radius=0.285, minor_radius=0.035, major_segments=32, minor_segments=8,
-                                 location=(0, 0, 1.02))
-belt = bpy.context.object
-belt.name = 'leather_belt'
-belt.data.materials.append(LEATHER)
-garments.append(belt)
-
 # Lightweight deforming skeleton. Named bones are the browser runtime contract.
 bpy.ops.object.armature_add(enter_editmode=True, location=(0, 0, 0))
 rig = bpy.context.object
