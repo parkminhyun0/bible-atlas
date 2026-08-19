@@ -28,6 +28,7 @@ const moveStick = document.getElementById('moveStick');
 const lookZone = document.getElementById('lookZone');
 const sprintButton = document.getElementById('sprintButton');
 const jumpButton = document.getElementById('jumpButton');
+const viewToggle = document.getElementById('viewToggle');
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x86add4);
@@ -50,6 +51,7 @@ scene.add(sun);
 
 const controls = new PointerLockControls(camera, renderer.domElement);
 scene.add(camera);
+const playerPosition = new THREE.Vector3();
 const keys = new Set();
 const collisionMeshes = [];
 const interactiveDoors = [];
@@ -69,6 +71,41 @@ let debirNoticeShown = false;
 let experienceActive = false;
 let touchSprint = false;
 const touchMove = new THREE.Vector2();
+let thirdPerson = false;
+let avatarWalkTime = 0;
+
+function createVisitorAvatar(){
+  const group = new THREE.Group();
+  group.name = 'visitorAvatar';
+  const cloth = new THREE.MeshStandardMaterial({color:0xb85f3d,roughness:0.88});
+  const trim = new THREE.MeshStandardMaterial({color:0xe4c98a,roughness:0.8});
+  const skin = new THREE.MeshStandardMaterial({color:0xa96f4f,roughness:0.92});
+  const leather = new THREE.MeshStandardMaterial({color:0x39251b,roughness:0.95});
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.39,0.9,8),cloth);
+  body.position.y=1.05; group.add(body);
+  const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.275,0.275,0.07,8),trim);
+  belt.position.y=1.12; group.add(belt);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.19,10,8),skin);
+  head.position.y=1.72; group.add(head);
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.195,10,6,0,Math.PI*2,0,Math.PI*0.56),leather);
+  hair.position.y=1.76; group.add(hair);
+  const limbs={arms:[],legs:[]};
+  for(const side of [-1,1]){
+    const arm=new THREE.Group(); arm.position.set(side*0.31,1.38,0);
+    const armMesh=new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.065,0.68,7),skin);
+    armMesh.position.y=-0.31; arm.add(armMesh); group.add(arm); limbs.arms.push(arm);
+    const leg=new THREE.Group(); leg.position.set(side*0.14,0.68,0);
+    const legMesh=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.075,0.68,7),skin);
+    legMesh.position.y=-0.31; leg.add(legMesh);
+    const foot=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.1,0.32),leather);
+    foot.position.set(0,-0.66,0.07); leg.add(foot); group.add(leg); limbs.legs.push(leg);
+  }
+  group.userData.limbs=limbs;
+  group.visible=false;
+  scene.add(group);
+  return group;
+}
+const visitorAvatar=createVisitorAvatar();
 
 function setStatus(message){ statusText.textContent = message; }
 function returnToAtlas(){
@@ -77,6 +114,14 @@ function returnToAtlas(){
   window.location.assign(target);
 }
 exitButton.addEventListener('click', returnToAtlas);
+function setThirdPerson(active){
+  thirdPerson=active;
+  visitorAvatar.visible=active;
+  viewToggle.setAttribute('aria-pressed',String(active));
+  viewToggle.textContent=active?'1인칭':'3인칭';
+  setStatus(active?'3인칭 시점 · 뒤에서 방문자 조작':'1인칭 시점');
+}
+viewToggle.addEventListener('click',()=>setThirdPerson(!thirdPerson));
 
 controls.addEventListener('lock', () => {
   experienceActive = true;
@@ -115,6 +160,7 @@ addEventListener('keydown', e => {
     e.preventDefault();
     if (!e.repeat) jump();
   }
+  if (e.code === 'KeyV' && !e.repeat) setThirdPerson(!thirdPerson);
 });
 addEventListener('keyup', e => keys.delete(e.code));
 addEventListener('blur', () => { keys.clear(); touchSprint = false; sprintButton?.classList.remove('active'); });
@@ -211,12 +257,13 @@ function applySpawn(){
     spawn.y = (ground ?? bounds.min.y) + EYE_HEIGHT;
     target = new THREE.Vector3(spawn.x, spawn.y, bounds.getCenter(new THREE.Vector3()).z);
   }
-  camera.position.copy(spawn);
+  playerPosition.copy(spawn);
+  camera.position.copy(playerPosition);
   camera.lookAt(target);
   camera.rotation.order = 'YXZ';
   verticalVelocity = 0;
   grounded = true;
-  lastSafePosition = camera.position.clone();
+  lastSafePosition = playerPosition.clone();
 }
 
 function registerInteractiveNode(object){
@@ -262,6 +309,7 @@ new GLTFLoader().load(MODEL_URL, gltf => {
   applySpawn();
   modelReady = true;
   startButton.disabled = false;
+  viewToggle.disabled = false;
   spawnFieldset.disabled = false;
   startButton.textContent = '체험 시작하기';
   setStatus('모델 준비 완료');
@@ -276,7 +324,7 @@ new GLTFLoader().load(MODEL_URL, gltf => {
 const clock = new THREE.Clock();
 function updateDoors(dt){
   for (const door of interactiveDoors) {
-    const distance = Math.hypot(camera.position.x-door.center.x, camera.position.z-door.center.z);
+    const distance = Math.hypot(playerPosition.x-door.center.x, playerPosition.z-door.center.z);
     const target = distance < 7.5 ? 1 : 0;
     if (target && door.name.startsWith('veilDebir') && !debirNoticeShown) {
       debirNoticeShown = true;
@@ -305,51 +353,80 @@ function updateMovement(dt){
   if (desired.lengthSq()) {
     desired.normalize();
     const distance = (keys.has('KeyF') || touchSprint ? SPRINT_SPEED : MOVE_SPEED) * frameDt;
-    const currentFloor = floorHeightAt(camera.position);
-    const candidate = camera.position.clone().addScaledVector(desired, distance);
+    const currentFloor = floorHeightAt(playerPosition);
+    const candidate = playerPosition.clone().addScaledVector(desired, distance);
     const nextFloor = floorHeightAt(candidate);
     const stepRise = currentFloor != null && nextFloor != null ? nextFloor - currentFloor : 0;
-    const waistBlocked = blocked(camera.position, desired, distance);
-    const headBlocked = blocked(camera.position, desired, distance, EYE_HEIGHT * 0.08);
+    const waistBlocked = blocked(playerPosition, desired, distance);
+    const headBlocked = blocked(playerPosition, desired, distance, EYE_HEIGHT * 0.08);
     const normalStep = stepRise <= MAX_STEP_HEIGHT && !waistBlocked;
     /* 허리선에는 걸리지만 머리선은 비어 있는 낮은 턱은, 상면이 확인될 때만
        자동으로 올라간다. 벽을 통과시키지 않고 낮은 장애물에만 적용한다. */
     const autoClimb = stepRise > MAX_STEP_HEIGHT && stepRise <= MAX_AUTO_CLIMB_HEIGHT &&
                       waistBlocked && !headBlocked && nextFloor != null;
     if (normalStep || autoClimb) {
-      camera.position.x = candidate.x;
-      camera.position.z = candidate.z;
+      playerPosition.x = candidate.x;
+      playerPosition.z = candidate.z;
       if (grounded && nextFloor != null) {
-        camera.position.y = nextFloor + EYE_HEIGHT;
+        playerPosition.y = nextFloor + EYE_HEIGHT;
       }
     }
   }
 
-  const floor = floorHeightAt(camera.position);
+  const floor = floorHeightAt(playerPosition);
   if (floor != null) {
     const floorEye = floor + EYE_HEIGHT;
     if (grounded && verticalVelocity <= 0) {
-      camera.position.y = THREE.MathUtils.lerp(camera.position.y, floorEye, Math.min(1, frameDt * 16));
+      playerPosition.y = THREE.MathUtils.lerp(playerPosition.y, floorEye, Math.min(1, frameDt * 16));
     } else {
       verticalVelocity -= GRAVITY * frameDt;
-      camera.position.y += verticalVelocity * frameDt;
-      if (verticalVelocity <= 0 && camera.position.y <= floorEye) {
-        camera.position.y = floorEye;
+      playerPosition.y += verticalVelocity * frameDt;
+      if (verticalVelocity <= 0 && playerPosition.y <= floorEye) {
+        playerPosition.y = floorEye;
         verticalVelocity = 0;
         grounded = true;
       }
     }
-    if (grounded) lastSafePosition = camera.position.clone();
+    if (grounded) lastSafePosition = playerPosition.clone();
   } else {
     /* 역사 지형 메시의 유효 경계 밖에는 바닥이 없다. 추락시키지 않고 마지막
        검증된 보행 지점으로 즉시 되돌려 체험 영역 경계를 명확히 한다. */
     if (lastSafePosition) {
-      camera.position.copy(lastSafePosition);
+      playerPosition.copy(lastSafePosition);
       verticalVelocity = 0;
       grounded = true;
       setStatus('체험 영역의 경계입니다 · 안전한 위치로 돌아왔습니다');
     }
   }
+
+  const moving=desired.lengthSq()>0.001;
+  if(moving){
+    avatarWalkTime+=frameDt*(keys.has('KeyF')||touchSprint?12:7);
+    visitorAvatar.rotation.y=Math.atan2(desired.x,desired.z);
+  }
+  const swing=moving?Math.sin(avatarWalkTime)*0.65:0;
+  const {arms,legs}=visitorAvatar.userData.limbs;
+  arms[0].rotation.x=THREE.MathUtils.damp(arms[0].rotation.x,swing,10,frameDt);
+  arms[1].rotation.x=THREE.MathUtils.damp(arms[1].rotation.x,-swing,10,frameDt);
+  legs[0].rotation.x=THREE.MathUtils.damp(legs[0].rotation.x,-swing,10,frameDt);
+  legs[1].rotation.x=THREE.MathUtils.damp(legs[1].rotation.x,swing,10,frameDt);
+}
+
+function updateView(){
+  visitorAvatar.position.set(playerPosition.x,playerPosition.y-EYE_HEIGHT,playerPosition.z);
+  if(!thirdPerson){ camera.position.copy(playerPosition); return; }
+  camera.getWorldDirection(forward); forward.y=0;
+  if(forward.lengthSq()<0.001) forward.set(0,0,-1); else forward.normalize();
+  const target=playerPosition.clone(); target.y-=0.55;
+  const wanted=playerPosition.clone().addScaledVector(forward,-5.5); wanted.y+=2.4;
+  const cameraRay=wanted.clone().sub(target);
+  const cameraDistance=cameraRay.length(); cameraRay.normalize();
+  raycaster.set(target,cameraRay); raycaster.far=cameraDistance;
+  const hit=raycaster.intersectObjects(collisionMeshes,false)[0];
+  const safeDistance=hit?Math.max(0.8,hit.distance-0.35):cameraDistance;
+  camera.position.copy(target).addScaledVector(cameraRay,safeDistance);
+  camera.lookAt(target);
+  camera.rotation.order='YXZ';
 }
 
 function animate(){
@@ -357,6 +434,7 @@ function animate(){
   const dt = clock.getDelta();
   updateDoors(dt);
   updateMovement(dt);
+  updateView();
   renderer.render(scene, camera);
 }
 animate();
