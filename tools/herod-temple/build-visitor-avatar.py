@@ -128,25 +128,7 @@ def rounded_box(name, loc, scale, mat, rotation=(0, 0, 0), bevel=0.035):
     return smooth(obj, bevel)
 
 
-def cape_mesh():
-    # A single rounded cloak silhouette avoids the rigid front/back box panels.
-    verts = [(-0.34, 0.12, 1.43), (0.34, 0.12, 1.43), (0.39, 0.14, 1.18),
-             (0.36, 0.16, 0.82), (0.25, 0.17, 0.45), (0, 0.18, 0.38),
-             (-0.25, 0.17, 0.45), (-0.36, 0.16, 0.82), (-0.39, 0.14, 1.18)]
-    mesh = bpy.data.meshes.new('woven_cape_mesh')
-    mesh.from_pydata(verts, [], [tuple(range(len(verts)))])
-    mesh.materials.append(CLOAK)
-    obj = bpy.data.objects.new('woven_cape', mesh)
-    bpy.context.collection.objects.link(obj)
-    solid = obj.modifiers.new('cloth thickness', 'SOLIDIFY')
-    solid.thickness = 0.018
-    return smooth(obj, 0.045)
-
-
 garments = []
-garments += [
-    cape_mesh(),
-]
 
 # Head covering, layered hair, and beard follow the supplied four-view reference.
 garments += [

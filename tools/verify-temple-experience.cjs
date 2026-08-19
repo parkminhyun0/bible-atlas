@@ -29,7 +29,8 @@ const checks = [
   ['FPS camera-relative movement basis', js.includes("desired.add(forward)") && js.includes("desired.sub(forward)") && js.includes("desired.add(right)") && js.includes("desired.sub(right)")],
   ['third-person body turns toward travel', js.includes('Math.atan2(desired.x,desired.z)') && js.includes('yawDelta') && js.includes('Math.exp(-12*frameDt)')],
   ['model-specific forward axes', js.includes('group.userData.forwardOffset=0') && js.includes('loaded.userData.forwardOffset = 0')],
-  ['skinned avatar preserves anatomical rest pose', js.includes('walkRestRotationX') && js.includes('restX(arms[0])+swing')],
+  ['skinned avatar preserves anatomical rest pose', js.includes('walkRestRotationX') && js.includes('restX(node)+offset')],
+  ['articulated gait and jump pose', ['forearmLeft','shinLeft','avatarJumpBlend','gaitLift','poseX(shins[0]'].every(token => js.includes(token))],
   ['continuous indoor safety floor', js.includes('MAX_INTERIOR_FLOOR_DROP') && js.includes('hasNearbyRoof') && js.includes('lastFloorHeight')],
 ];
 
