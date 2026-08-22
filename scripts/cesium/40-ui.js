@@ -370,8 +370,11 @@
   });
 
   on('fitAll', 'click', () => {
+    // 남쪽 경계는 나바테아 왕국(페트라 lat 30.33, 영역 남단 29.98)까지 담는다.
+    // 처음 열릴 때의 카메라는 그대로 두고 '전체 보기'만 넓혔다 — 갈릴리·유대
+    // 중심의 기본 화면을 흔들지 않으면서 남쪽 영토를 찾아갈 수 있게 하기 위해서다.
     V().camera.flyTo({
-      destination: Cesium.Rectangle.fromDegrees(34.3, 31.0, 36.4, 33.6),
+      destination: Cesium.Rectangle.fromDegrees(34.3, 29.9, 36.4, 33.6),
       duration: 2.0,
     });
   });
