@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bibleatlas.local/cmux/state.schema.json",
+  "title": "CMUX Model-Neutral Work State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "revision", "project", "task", "git", "executor", "phase", "completedSteps", "nextStep", "evidence", "gates", "blockers", "handoff", "lease", "updatedAt"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "revision": { "type": "integer", "minimum": 0 },
+    "project": { "type": "string", "minLength": 1 },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "status"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["active", "blocked", "complete"] }
+      }
+    },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch", "baseBranch", "headAtWrite"],
+      "properties": {
+        "branch": { "type": "string", "minLength": 1 },
+        "baseBranch": { "type": "string", "minLength": 1 },
+        "headAtWrite": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "executor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "model", "session"],
+      "properties": {
+        "provider": { "type": ["string", "null"] },
+        "model": { "type": ["string", "null"] },
+        "session": { "type": ["string", "null"] }
+      }
+    },
+    "phase": { "type": "string", "minLength": 1 },
+    "completedSteps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "completedAt", "evidenceIds"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "completedAt": { "type": "string", "format": "date-time" },
+          "evidenceIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+        }
+      }
+    },
+    "nextStep": { "type": ["string", "null"] },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "value", "sha256", "recordedAt"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["file", "command", "url", "note"] },
+          "value": { "type": "string", "minLength": 1 },
+          "sha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+          "recordedAt": { "type": "string", "format": "date-time" },
+          "supersededAt": { "type": "string", "format": "date-time" },
+          "replacedBy": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "required", "authority", "status", "evidenceIds", "decision"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "required": { "type": "boolean" },
+          "authority": { "enum": ["automated", "human", "external"] },
+          "status": { "enum": ["pending", "pass", "fail", "waived"] },
+          "evidenceIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+          "decision": {
+            "oneOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["actor", "at"],
+                "properties": {
+                  "actor": { "type": "string", "minLength": 1 },
+                  "at": { "type": "string", "format": "date-time" }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "reason", "since"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 },
+          "since": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "handoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ready", "reason", "requestedAt", "history"],
+      "properties": {
+        "ready": { "type": "boolean" },
+        "reason": { "type": ["string", "null"] },
+        "requestedAt": { "type": ["string", "null"], "format": "date-time" },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["from", "to", "at", "mode", "reason"],
+            "properties": {
+              "from": { "type": ["string", "null"] },
+              "to": { "type": "string", "minLength": 1 },
+              "at": { "type": "string", "format": "date-time" },
+              "mode": { "enum": ["planned", "recovery"] },
+              "reason": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "lease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owner", "heartbeatAt", "ttlMinutes"],
+      "properties": {
+        "owner": { "type": ["string", "null"] },
+        "heartbeatAt": { "type": ["string", "null"], "format": "date-time" },
+        "ttlMinutes": { "type": "integer", "minimum": 5, "maximum": 1440 }
+      }
+    },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}
