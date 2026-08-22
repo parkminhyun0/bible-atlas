@@ -300,18 +300,36 @@ window.BibleAtlasLayers = (function () {
     });
   }
 
-  /* ── 1세기 핵심 지명: 빨간 점 ── */
+  /* 산 아이콘 — 외부 파일을 두지 않으려고 SVG 를 data URI 로 담았다.
+     빨간 점과 구별되도록 흙빛 삼각 능선에 설선(雪線)을 얹었다. */
+  const MOUNTAIN_ICON = 'data:image/svg+xml;base64,' + btoa(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 18">' +
+    '<path d="M1 17 L8 4 L12 10 L15 6 L21 17 Z" fill="#a4744a" stroke="#2a1a0b" stroke-width="1.4" stroke-linejoin="round"/>' +
+    '<path d="M8 4 L5.4 8.8 L8 7.6 L10.2 8.9 L12 10 L9.8 6.6 Z" fill="#f2ede4"/>' +
+    '</svg>');
+
+  /* ── 1세기 핵심 지명: 빨간 점 (산은 산 모양) ── */
   function addKeyPlaces(){
     KEY_PLACES.forEach(p => {
       const text = p.disputed ? p.n + ' *' : p.n;
+      // 산은 점이 아니라 산 모양으로 그린다. 도시와 지형을 한눈에 가르기 위해서다.
+      const marker = p.mountain
+        ? { billboard: {
+              image: MOUNTAIN_ICON,
+              width: 22, height: 18,
+              verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            } }
+        : { point: {
+              pixelSize: 9, color: css('#e02b23', p.disputed ? 0.72 : 1),
+              outlineColor: css('#2a0b08'), outlineWidth: 2,
+              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+              disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            } };
       const e = add('places', {
         position: deg(p.lng, p.lat),
-        point: {
-          pixelSize: 9, color: css('#e02b23', p.disputed ? 0.72 : 1),
-          outlineColor: css('#2a0b08'), outlineWidth: 2,
-          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        },
+        ...marker,
         label: {
           text,
           font: '600 13px "Noto Sans KR", sans-serif',
