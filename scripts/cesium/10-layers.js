@@ -38,7 +38,8 @@ window.BibleAtlasLayers = (function () {
        중·광역에서 대표 라벨 하나만 남긴다. */
   const MAJOR_PLACE_NAMES = new Set([
     '예루살렘','베들레헴','나사렛','가버나움','가이사랴','가이사랴 빌립보',
-    '두로','시돈','사마리아','세겜','벧산','디베랴','가사','욥바','헤브론'
+    '두로','시돈','사마리아','세겜','벧산','디베랴','가사','욥바','헤브론',
+    '나바테아 왕국 · 페트라'
   ]);
   const UI_BLOCK_IDS = ['hdr','realCtl','routes','treeDock','profilePanel'];
   const LABEL_CANDIDATES = [
