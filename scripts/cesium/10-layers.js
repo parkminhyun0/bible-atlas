@@ -301,9 +301,14 @@ window.BibleAtlasLayers = (function () {
   }
 
   /* 산 아이콘 — 외부 파일을 두지 않으려고 SVG 를 data URI 로 담았다.
-     빨간 점과 구별되도록 흙빛 삼각 능선에 설선(雪線)을 얹었다. */
+     빨간 점과 구별되도록 흙빛 삼각 능선에 설선(雪線)을 얹었다.
+
+     width/height 를 반드시 적는다. viewBox 만 있으면 브라우저가 기본 크기로
+     부풀려 디코딩한다 — 이 아이콘은 22x18 을 의도했는데 183x150 으로 읽혔다.
+     Cesium 이 그것을 다시 줄여 그리므로 흐려지고 자리도 어긋난다.
+     화면에서 또렷하도록 2배(44x36)로 그린 뒤 빌보드에서 절반으로 줄인다. */
   const MOUNTAIN_ICON = 'data:image/svg+xml;base64,' + btoa(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 18">' +
+    '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="36" viewBox="0 0 22 18">' +
     '<path d="M1 17 L8 4 L12 10 L15 6 L21 17 Z" fill="#a4744a" stroke="#2a1a0b" stroke-width="1.4" stroke-linejoin="round"/>' +
     '<path d="M8 4 L5.4 8.8 L8 7.6 L10.2 8.9 L12 10 L9.8 6.6 Z" fill="#f2ede4"/>' +
     '</svg>');
