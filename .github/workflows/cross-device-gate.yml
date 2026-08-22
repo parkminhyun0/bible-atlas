@@ -1,0 +1,25 @@
+name: Cross-device gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Verify cross-device policy and responsive contracts
+        run: node tools/verify-cross-device.cjs ${{ github.event_name == 'pull_request' && '--pr' || '' }}
+      - name: Verify temple experience input parity
+        run: node tools/verify-temple-experience.cjs
+      - name: Verify Herod Temple reconstruction
+        run: node tools/verify-temple.cjs
