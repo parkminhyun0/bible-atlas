@@ -459,14 +459,16 @@ function sunAltAz(){
 }
 
 /* ══════════════ 조작 방식: 기존 MapLibre 판과 동일하게 ══════════════
-   Cesium 기본값은 좌드래그=지구 회전, 우드래그=줌, 휠=줌이라 익숙한 조작과 다르다.
+   Cesium 기본값은 좌드래그=지구 회전, 우드래그=줌이라 익숙한 조작과 다르다.
    기존 지도와 같은 감각으로 맞춘다:
      · 좌드래그            지도 이동(팬)
      · 우드래그            좌우 회전(bearing) + 상하 기울기(pitch)
+     · 마우스 휠           확대·축소
      · 트랙패드 두 손가락  좌우 회전 + 상하 기울기
      · 핀치 / Shift+휠     확대·축소
-   트랙패드 두 손가락 드래그는 브라우저에서 ctrlKey 없는 wheel 이벤트로 오고,
-   핀치는 ctrlKey 가 붙은 wheel 로 온다. 이 차이로 둘을 구분한다. */
+   핀치는 ctrlKey 가 붙은 wheel 로 오지만, 마우스 휠과 트랙패드 두 손가락
+   드래그는 둘 다 ctrlKey 없는 wheel 로 와서 구분이 필요하다.
+   classifyWheelDevice() 가 그 판정을 맡는다. */
 const ORBIT = { headingPerPx: 0.25, pitchPerPx: 0.18, minPitch: -89, maxPitch: -1 };
 
 function pickCenterPosition(){
@@ -497,6 +499,39 @@ function orbitAroundCenter(dHeadingDeg, dPitchDeg){
   viewer.scene.requestRender();
 }
 
+/* 마우스 휠인지 트랙패드 두 손가락 스크롤인지 판정한다.
+   둘 다 ctrlKey 없는 wheel 로 오기 때문에 델타 모양으로 갈라야 한다:
+     · deltaMode 가 픽셀이 아니면(줄·페이지 단위) 마우스 휠뿐이다 — Firefox 가 이렇다.
+     · 좌우 성분(deltaX)이 있거나 deltaY 가 소수면 트랙패드다.
+       마우스 휠은 세로 한 축으로 정수 계단값만 보낸다.
+     · Chrome·Safari 는 마우스 휠 한 칸을 wheelDelta 120 의 배수로 준다.
+       트랙패드는 손가락 이동량을 그대로 실어 120 배수가 거의 나오지 않는다.
+   판정은 제스처의 첫 이벤트에서만 하고 끝날 때까지(마지막 이벤트 후 250 ms) 붙든다.
+   트랙패드 관성 스크롤은 뒤로 갈수록 델타가 커져 휠처럼 보이는데, 붙들지 않으면
+   한 번의 스크롤 도중에 회전이 줌으로 뒤바뀐다. */
+const WHEEL_GESTURE_GAP_MS = 250;
+let wheelDeviceKind = null, wheelDeviceAt = 0;
+
+function classifyWheelDevice(e){
+  const now = e.timeStamp;
+  if (wheelDeviceKind && now - wheelDeviceAt < WHEEL_GESTURE_GAP_MS){
+    wheelDeviceAt = now;
+    return wheelDeviceKind;
+  }
+  let kind;
+  if (e.deltaMode !== 0) kind = 'mouse';
+  else if (e.deltaX !== 0 || !Number.isInteger(e.deltaY)) kind = 'trackpad';
+  else {
+    const wd = Math.abs(e.wheelDeltaY !== undefined ? e.wheelDeltaY : (e.wheelDelta || 0));
+    // 120 배수는 휠 한 칸. 배수가 아니어도 첫 이벤트가 이미 크면 휠로 본다
+    // (트랙패드는 손가락이 막 움직이기 시작한 참이라 작은 값에서 출발한다).
+    kind = (wd && wd % 120 === 0) || Math.abs(e.deltaY) >= 100 ? 'mouse' : 'trackpad';
+  }
+  wheelDeviceKind = kind;
+  wheelDeviceAt = now;
+  return kind;
+}
+
 function setupMapLibreStyleControls(){
   const scene = viewer.scene;
   const ctl = scene.screenSpaceCameraController;
@@ -524,30 +559,28 @@ function setupMapLibreStyleControls(){
     Cesium.ScreenSpaceEventType.RIGHT_UP);
   scene.canvas.addEventListener('contextmenu', e => e.preventDefault());
 
-  /* 트랙패드 두 손가락 = 좌우 회전 + 상하 기울기 / 핀치·Shift+휠 = 줌 */
+  /* 마우스 휠·핀치·Shift+휠 = 줌 / 트랙패드 두 손가락 = 좌우 회전 + 상하 기울기 */
   scene.canvas.addEventListener('wheel', (e) => {
-    if (e.ctrlKey || e.shiftKey) return;     // 핀치·Shift+휠은 Cesium 기본 줌으로 넘긴다
     e.preventDefault();
     e.stopPropagation();
-    orbitAroundCenter(-e.deltaX * 0.22, -e.deltaY * 0.16);
+    if (e.ctrlKey || e.shiftKey || classifyWheelDevice(e) === 'mouse') zoomByWheel(e);
+    else orbitAroundCenter(-e.deltaX * 0.22, -e.deltaY * 0.16);
   }, { passive: false, capture: true });
+}
 
-  // 핀치(ctrl+wheel)·Shift+휠을 줌으로 처리
-  scene.canvas.addEventListener('wheel', (e) => {
-    if (!e.ctrlKey && !e.shiftKey) return;
-    e.preventDefault();
-    const cam = viewer.camera;
-    const carto = Cesium.Cartographic.fromCartesian(cam.positionWC);
-    const height = carto ? carto.height : 3000;
-    // 고도에 비례한 배율 — 높은 곳에서는 성큼, 지면 근처에서는 촘촘하게
-    /* 줌 속도 배율: 레이어 트리의 '줌 속도' 슬라이더(0.5~5.0)로 조절한다.
-       screenSpaceCameraController.zoomFactor 는 이렇게 휠을 직접 처리하는 경우
-       반영되지 않는다(실측 확인). 그래서 이동량에 직접 곱한다. 5.0 이 종전 속도. */
-    const speed = (window.BibleAtlasZoom && window.BibleAtlasZoom.speed) || 2;
-    const step = Math.max(12, height * 0.22) * (speed / 5);
-    cam.moveBackward(e.deltaY > 0 ? step : -step);
-    viewer.scene.requestRender();
-  }, { passive: false, capture: true });
+/* 휠 한 번의 줌 처리 — 핀치·Shift+휠·마우스 휠이 모두 이 경로를 쓴다 */
+function zoomByWheel(e){
+  const cam = viewer.camera;
+  const carto = Cesium.Cartographic.fromCartesian(cam.positionWC);
+  const height = carto ? carto.height : 3000;
+  // 고도에 비례한 배율 — 높은 곳에서는 성큼, 지면 근처에서는 촘촘하게
+  /* 줌 속도 배율: 레이어 트리의 '줌 속도' 슬라이더(0.5~5.0)로 조절한다.
+     screenSpaceCameraController.zoomFactor 는 이렇게 휠을 직접 처리하는 경우
+     반영되지 않는다(실측 확인). 그래서 이동량에 직접 곱한다. 5.0 이 종전 속도. */
+  const speed = (window.BibleAtlasZoom && window.BibleAtlasZoom.speed) || 2;
+  const step = Math.max(12, height * 0.22) * (speed / 5);
+  cam.moveBackward(e.deltaY > 0 ? step : -step);
+  viewer.scene.requestRender();
 }
 
 /* 예루살렘에 가까워지면 성전 3D 모델을 불러온다 */
