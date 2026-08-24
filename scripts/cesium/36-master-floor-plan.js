@@ -37,9 +37,23 @@ window.BibleAtlasMasterFloorPlan = (function(){
     ];
   }
 
+  /* Reuse the GLB's exact modelMatrix. This is intentionally the same math as
+     35-herod-temple-model.js localToCartesian(), but it reads the public model
+     primitive so STEP02 does not create a second georegistration path. */
+  function siteToCartesian(x, up, z){
+    if (typeof BibleAtlasTempleModel.localToCartesian === 'function')
+      return BibleAtlasTempleModel.localToCartesian(x, up, z);
+    const m = BibleAtlasTempleModel.model;
+    if (!m) throw new Error('Temple GLB modelMatrix unavailable');
+    const full = Cesium.Matrix4.multiplyTransformation(
+      m.modelMatrix, Cesium.Axis.Y_UP_TO_Z_UP, new Cesium.Matrix4());
+    return Cesium.Matrix4.multiplyByPoint(
+      full, new Cesium.Cartesian3(x, up, z), new Cesium.Cartesian3());
+  }
+
   function toCartesian(X, Y, up){
     const p = archToSite(X, Y);
-    return BibleAtlasTempleModel.localToCartesian(p[0], up || 0, p[1]);
+    return siteToCartesian(p[0], up || 0, p[1]);
   }
 
   function addLine(id, points, color, width, up, dashed){
@@ -90,8 +104,8 @@ window.BibleAtlasMasterFloorPlan = (function(){
     loading = (async()=>{
       await loadPlan();
       await BibleAtlasTempleModel.load(viewer);
-      if (typeof BibleAtlasTempleModel.localToCartesian !== 'function')
-        throw new Error('Temple model localToCartesian API missing');
+      if (!BibleAtlasTempleModel.model)
+        throw new Error('Temple GLB model unavailable');
 
       const C = Cesium.Color;
       addLine('outer-platform', closeRing(plan.outer_platform.polygon_H0_m), C.GOLD, 3, 0.4);
