@@ -2,7 +2,17 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
-const MODEL_URL = './assets/herod-temple/ad30/lod1.glb?v=20260819c';
+/* 2026-08-24 — 모델을 둘로 나눴다.
+   data/herod-temple/03_모델_비교_이방인의_뜰.md 참조. 이방인의 뜰(주랑·왕의
+   주랑·문·계단)은 상류 openbibleinfo 판이 요세푸스·발굴 수치에 맞고, 성역
+   안쪽(성소·지성소·여인의 뜰)은 새 모델이 미돗에 맞는다. 그래서
+     mount-outer  = 상류 판에서 성역 자리만 비운 것
+     interior-v2  = 새 모델의 성역 안쪽을 상류 프레임으로 옮긴 것
+   둘은 같은 로컬 프레임이라 그냥 겹쳐 놓으면 맞물린다. */
+const MODEL_URLS = [
+  './assets/herod-temple/ad30/mount-outer.glb?v=20260824a',
+  './assets/herod-temple/ad30/interior-v2.glb?v=20260824a',
+];
 const EYE_HEIGHT = 1.68;
 const MOVE_SPEED = 7;
 const SPRINT_SPEED = 19;
@@ -378,33 +388,51 @@ function applySpawn(){
   lastFloorHeight = floorHeightAt(playerPosition) ?? playerPosition.y - EYE_HEIGHT;
 }
 
+/* 움직이는 부재. 두 모델이 이름 규칙이 달라 둘 다 받는다.
+     상류(mount-outer) — stairsChel · doorCourt_<축>_<m|p>_… · veilOuter · veilDebir*
+     새 모델(interior-v2) — gate_door_* · nicanor_door_l|r · veil_outer · veil_inner
+   상류는 이름 안에 이동 축과 방향이 들어 있고, 새 모델은 없다. 새 모델 쪽은
+   부재의 가로 치수에서 축을 고른다 — 문짝은 얇은 판이라 긴 쪽으로 미끄러진다. */
+const MOVABLE = /^(stairsChel|door|veil|gate_door|nicanor_door)/;
 function registerInteractiveNode(object){
   let owner = object;
-  while (owner && !/^(stairsChel|door|veil)/.test(owner.name || '')) owner = owner.parent;
+  while (owner && !MOVABLE.test(owner.name || '')) owner = owner.parent;
   if (!owner) return;
   const name = owner.name;
   if (name === 'stairsChel') {
     const mats = Array.isArray(object.material) ? object.material : [object.material];
     mats.forEach(mat => { if (mat) { mat.side = THREE.DoubleSide; mat.needsUpdate = true; } });
   }
-  if (!name.startsWith('door') && !name.startsWith('veil')) return;
+  if (name === 'stairsChel') return;
   if (registeredInteractiveNodes.has(owner)) return;
   registeredInteractiveNodes.add(owner);
   const box = new THREE.Box3().setFromObject(owner);
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
-  let axis = 'y', sign = 1, travel = size.y + 0.4;
-  if (name.startsWith('door')) {
+  let axis = 'y', sign = 1, travel = size.y + 0.4;   // 휘장은 위로 걷힌다
+  if (name.startsWith('doorCourt') || name.startsWith('doorHekhal')) {
     const bits = name.split('_');
     axis = bits[1];
     sign = bits[2] === 'm' ? -1 : 1;
     travel = (axis === 'x' ? size.x : size.z) * 0.94;
+  } else if (name.startsWith('gate_door')) {
+    axis = size.x >= size.z ? 'x' : 'z';
+    sign = 1;
+    travel = Math.max(size.x, size.z) * 0.94;
+  } else if (name.startsWith('nicanor_door')) {
+    axis = size.z >= size.x ? 'z' : 'x';
+    /* 니가노르 문은 두 짝이 가운데에서 갈라진다. _l 이 남쪽(큰 Z), _r 이 북쪽. */
+    sign = name.endsWith('_l') ? 1 : -1;
+    travel = Math.max(size.x, size.z) * 0.94;
   }
   interactiveDoors.push({object:owner,name,center,axis,sign,travel,amount:0,closed:owner.position.clone()});
 }
 
+/* 성소 바닥 아래로 빠지는 것을 막는 보이지 않는 바닥.
+   상류 모델은 성소 덩어리가 'sanct' 한 노드였고, 새 모델은 바닥이
+   'floor_marble' 로 따로 있다. 둘 중 있는 쪽에서 만든다. */
 function addSanctuarySafetyFloor(model){
-  const sanctuary=model.getObjectByName('sanct');
+  const sanctuary=model.getObjectByName('sanct')||model.getObjectByName('floor_marble');
   if(!sanctuary)return;
   sanctuary.updateWorldMatrix(true,true);
   const box=new THREE.Box3().setFromObject(sanctuary);
@@ -421,7 +449,7 @@ function addSanctuarySafetyFloor(model){
   collisionMeshes.push(floor);
 }
 
-new GLTFLoader().load(MODEL_URL, gltf => {
+function absorbModel(gltf){
   const model = gltf.scene;
   scene.add(model);
   model.traverse(object => {
@@ -436,28 +464,43 @@ new GLTFLoader().load(MODEL_URL, gltf => {
     registerInteractiveNode(object);
   });
   addSanctuarySafetyFloor(model);
-  bounds = new THREE.Box3().setFromObject(model);
-  applySpawn();
-  modelReady = true;
-  startButton.disabled = false;
-  viewToggle.disabled = false;
-  spawnFieldset.disabled = false;
-  startButton.textContent = '체험 시작하기';
-  setStatus('모델 준비 완료');
-}, progress => {
-  if (progress.total) setStatus(`모델 ${Math.round(progress.loaded / progress.total * 100)}%`);
-}, error => {
-  console.error(error);
-  setStatus('모델을 불러오지 못했습니다');
-  startButton.textContent = '불러오기 실패';
-});
+  bounds = bounds ? bounds.union(new THREE.Box3().setFromObject(model))
+                  : new THREE.Box3().setFromObject(model);
+}
+
+/* 두 GLB 를 함께 기다린다. 하나만 와도 시작하면 성역이 빈 채로 걷게 된다. */
+let modelsLeft = MODEL_URLS.length;
+const modelProgress = MODEL_URLS.map(() => 0);
+for (const [i, url] of MODEL_URLS.entries()){
+  new GLTFLoader().load(url, gltf => {
+    absorbModel(gltf);
+    if (--modelsLeft) return;
+    applySpawn();
+    modelReady = true;
+    startButton.disabled = false;
+    viewToggle.disabled = false;
+    spawnFieldset.disabled = false;
+    startButton.textContent = '체험 시작하기';
+    setStatus('모델 준비 완료');
+  }, progress => {
+    if (!progress.total) return;
+    modelProgress[i] = progress.loaded / progress.total;
+    const pct = modelProgress.reduce((a, b) => a + b, 0) / MODEL_URLS.length;
+    setStatus(`모델 ${Math.round(pct * 100)}%`);
+  }, error => {
+    console.error(url, error);
+    setStatus('모델을 불러오지 못했습니다');
+    startButton.textContent = '불러오기 실패';
+  });
+}
 
 const clock = new THREE.Clock();
 function updateDoors(dt){
   for (const door of interactiveDoors) {
     const distance = Math.hypot(playerPosition.x-door.center.x, playerPosition.z-door.center.z);
     const target = distance < 7.5 ? 1 : 0;
-    if (target && door.name.startsWith('veilDebir') && !debirNoticeShown) {
+    /* 지성소 앞 휘장 — 상류는 veilDebir*, 새 모델은 veil_inner(트락신 안쪽). */
+    if (target && /^(veilDebir|veil_inner)/.test(door.name) && !debirNoticeShown) {
       debirNoticeShown = true;
       setStatus('지성소 · AD 30에는 기반석 외 성물이 없었습니다');
     }

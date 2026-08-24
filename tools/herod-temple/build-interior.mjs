@@ -228,8 +228,13 @@ for (const p of parts){
    프레임이 떨어진다.
    이름 끝의 일련번호만 떼어 같은 군끼리 합친다(roof_spike_29…roof_spike_117 →
    roof_spike). 군 이름은 남으므로 나중에 해설·상호작용을 붙일 수 있다. */
+/* 다만 **움직이는 부재는 묶지 않는다.** 1인칭 순례 화면이 문짝·휘장을 하나씩
+   열고 닫으므로, 합쳐 버리면 문 여덟 짝이 한 덩어리로 움직인다.
+   (실제로 한 번 합쳤다가 gate_door 여덟 짝이 하나가 됐다.) */
+const KEEP_SEPARATE = /^(gate_door|nicanor_door|veil_|doorHekhal)/;
 const groups = new Map();
 for (const p of parts){
+  if (KEEP_SEPARATE.test(p.name)){ groups.set(`solo:${groups.size}:${p.name}`, p); continue; }
   const key = `${p.name.replace(/(_\d+)+$/, '')}|${p.mat}`;
   const g0 = groups.get(key);
   if (!g0){ groups.set(key, { name:p.name.replace(/(_\d+)+$/, ''), mat:p.mat,
