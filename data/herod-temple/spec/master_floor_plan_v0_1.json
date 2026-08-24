@@ -1,0 +1,275 @@
+{
+  "schema": "bibleatlas.herod-temple.master-floor-plan",
+  "version": "0.1.0",
+  "status": "STEP02_MASTER_FLOOR_PLAN_V0_1",
+  "epoch": "c. AD 30 (working reconstruction; source chronology remains explicit)",
+  "units": {
+    "linear": "metre",
+    "blender_unit_m": 1.0,
+    "cubit_live_m": 0.525,
+    "cubit_live_status": "LOCKED_USER_APPROVED_EXISTING_CESIUM_BASELINE",
+    "alternate_cubits": [
+      {
+        "m": 0.45,
+        "status": "research_only_non_destructive"
+      }
+    ]
+  },
+  "method": {
+    "principle": "Dimension-locked local architecture; georegistration isolated in world_alignment.json.",
+    "no_visual_nudge": true,
+    "conflicts": "Never average primary-source conflicts; keep variants.",
+    "source_priority": [
+      "physical survey/archaeology",
+      "primary text",
+      "scholarly reconstruction",
+      "visual reference"
+    ]
+  },
+  "frames": {
+    "site_model": {
+      "origin": "Herodian platform NW corner used by current GLB builder",
+      "axes": {
+        "x": "+east-ish along current site model",
+        "y": "+up",
+        "z": "+south-ish"
+      },
+      "unit": "m",
+      "source": "vendor/3d-temple-mount/src/40-data.js"
+    },
+    "architectural_H0": {
+      "origin": "center of Holy of Holies interior plan at sanctuary floor horizontal datum",
+      "axes": {
+        "x": "+east along sacred precinct axis",
+        "y": "+north perpendicular to sacred precinct axis",
+        "z": "+up"
+      },
+      "site_model_xz_m": [
+        88.574616743,
+        225.758621382
+      ],
+      "basis_in_site_xz": {
+        "east": [
+          0.997283737526,
+          0.073655596301
+        ],
+        "north": [
+          0.073655596301,
+          -0.997283737526
+        ]
+      },
+      "arch_to_site_formula": {
+        "site_x": "H0_site_x + 0.997283737526*X + 0.073655596301*Y",
+        "site_z": "H0_site_z + 0.073655596301*X - 0.997283737526*Y"
+      },
+      "note": "H0 position within the 500-cubit square follows the current Ritmeyer-based internal-siting hypothesis; it is not an archaeological point."
+    }
+  },
+  "world_placement": {
+    "alignment_ssot": "data/herod-temple/spec/world_alignment.json",
+    "alignment_status": "alignment-provisional",
+    "scale": 1.0,
+    "current_horizontal_rms_m": 3.125,
+    "current_max_control_residual_m": 4.36,
+    "vertical_datum_status": "UNRESOLVED",
+    "derived_H0_wgs84": {
+      "lat": 31.7781297571,
+      "lng": 35.2352091871,
+      "status": "DERIVED_FROM_CURRENT_PROVISIONAL_ALIGNMENT_NOT_NEW_ARCHAEOLOGICAL_FACT"
+    },
+    "architectural_east_bearing_deg": 86.48398,
+    "architectural_north_bearing_deg": 356.48398,
+    "rule": "Do not move/scale/rotate plan to match satellite imagery. Improve only world_alignment control anchors; local dimensions remain unchanged."
+  },
+  "outer_platform": {
+    "polygon_H0_m": [
+      [-104.962411, 218.621385],
+      [210.0, 215.8125],
+      [210.0, -244.43766],
+      [-69.239447, -265.061227]
+    ],
+    "site_model_polygon_m": [
+      [0.0, 0.0],
+      [313.9, 26.0],
+      [280.0, 485.0],
+      [0.0, 485.0]
+    ],
+    "wall_lengths_m": {
+      "north": 314.974936,
+      "east": 460.25016,
+      "south": 280.0,
+      "west": 485.0
+    },
+    "confidence": "B_shape / current survey synthesis; world georegistration provisional",
+    "note": "Literature rounds these approximately to N315/E460/S280/W485 m; do not force rectangle."
+  },
+  "pre_herodian_500_cubit_square": {
+    "side_cubit": 500,
+    "side_m": 262.5,
+    "polygon_H0_m": [
+      [-52.5, 85.3125],
+      [210.0, 85.3125],
+      [210.0, -177.1875],
+      [-52.5, -177.1875]
+    ],
+    "margins_cubit": {
+      "west": 62,
+      "north": 95,
+      "east": 116,
+      "south": 270
+    },
+    "margin_status": "scholarly_siting_hypothesis",
+    "source": "Middot 2:1 + Ritmeyer 500-cubit-square hypothesis"
+  },
+  "levels": {
+    "reference": "Court of Gentiles / esplanade local z=0",
+    "court_of_gentiles_m": 0,
+    "chel_m": 0,
+    "court_of_women_m": 3.15,
+    "court_of_israel_m": 7.0875,
+    "court_of_priests_m": 8.4,
+    "sanctuary_floor_m": 11.55,
+    "sanctuary_top_above_esplanade_m": 60.9,
+    "note": "Vertical datum to WGS84/terrain remains unresolved; do not use modern DEM to alter these relative levels."
+  },
+  "dimension_checks": {
+    "inner_court_EW_cubit": {
+      "segments": [11, 11, 32, 22, 100, 11],
+      "sum": 187
+    },
+    "sanctuary_EW_cubit": {
+      "segments": [5, 11, 6, 40, 1, 20, 6, 6, 5],
+      "sum": 100
+    },
+    "sanctuary_NS_cubit": {
+      "segments": [5, 3, 5, 6, 6, 20, 6, 6, 5, 3, 5],
+      "sum": 70
+    },
+    "women_court_cubit": [135, 135],
+    "sanctuary_front_width_cubit": 100
+  },
+  "features": [
+    {"id":"AZARAH_INNER_COURT","geometry":"rect","rect_m":{"xmin":-19.95,"xmax":78.225,"ymin":-35.4375,"ymax":35.4375},"source":"Middot 5:1","confidence":"B","status":"candidate","notes":"187×135 cubits."},
+    {"id":"COURT_OF_WOMEN","geometry":"rect","rect_m":{"xmin":78.225,"xmax":149.1,"ymin":-35.4375,"ymax":35.4375},"source":"Middot 2:5","confidence":"B","status":"candidate","notes":"135×135 cubits."},
+    {"id":"WOMEN_CHAMBER_NE_WOOD","geometry":"rect","rect_m":{"xmin":128.1,"xmax":149.1,"ymin":14.4375,"ymax":35.4375},"source":"Middot 2:5","confidence":"B","status":"candidate","notes":"40-cubit chamber; unroofed; internal architecture unresolved."},
+    {"id":"WOMEN_CHAMBER_SE_NAZIRITES","geometry":"rect","rect_m":{"xmin":128.1,"xmax":149.1,"ymin":-35.4375,"ymax":-14.4375},"source":"Middot 2:5","confidence":"B","status":"candidate","notes":"40-cubit chamber; unroofed."},
+    {"id":"WOMEN_CHAMBER_NW_LEPERS","geometry":"rect","rect_m":{"xmin":78.225,"xmax":99.225,"ymin":14.4375,"ymax":35.4375},"source":"Middot 2:5","confidence":"B","status":"candidate","notes":"40-cubit chamber; unroofed."},
+    {"id":"WOMEN_CHAMBER_SW_OIL","geometry":"rect","rect_m":{"xmin":78.225,"xmax":99.225,"ymin":-35.4375,"ymax":-14.4375},"source":"Middot 2:5","confidence":"B","status":"candidate","notes":"Function variant: Abba Shaul identifies wine/oil storage."},
+    {"id":"COURT_OF_ISRAEL","geometry":"rect","rect_m":{"xmin":72.45,"xmax":78.225,"ymin":-35.4375,"ymax":35.4375},"source":"Middot 2:6; 5:1","confidence":"B","status":"candidate","notes":"135×11 cubits."},
+    {"id":"COURT_OF_PRIESTS","geometry":"rect","rect_m":{"xmin":66.675,"xmax":72.45,"ymin":-35.4375,"ymax":35.4375},"source":"Middot 2:6; 5:1","confidence":"B","status":"candidate","notes":"135×11 cubits."},
+    {"id":"ALTAR_MID_BASE","geometry":"rect","rect_m":{"xmin":49.875,"xmax":66.675,"ymin":-8.4,"ymax":8.4},"source":"Middot 3:1","confidence":"B","status":"candidate","notes":"32×32 cubit base; current canonical plan variant."},
+    {"id":"ALTAR_TO_PORCH_CLEAR_ZONE","geometry":"rect","rect_m":{"xmin":38.325,"xmax":49.875,"ymin":-35.4375,"ymax":35.4375},"source":"Middot 3:6; 5:1","confidence":"B","status":"candidate","notes":"22 cubits E-W."},
+    {"id":"SANCTUARY_100C","geometry":"rect","rect_m":{"xmin":-14.175,"xmax":38.325,"ymin":-18.375,"ymax":18.375},"source":"Middot 4:7","confidence":"B","status":"candidate","notes":"100 cubits E-W; 70-cubit body shown here."},
+    {"id":"BEHIND_KAPPORET","geometry":"rect","rect_m":{"xmin":-19.95,"xmax":-14.175,"ymin":-35.4375,"ymax":35.4375},"source":"Middot 5:1","confidence":"B","status":"candidate","notes":"11 cubits behind western Sanctuary wall within Azarah."},
+    {"id":"ALTAR_RAMP_MID","geometry":"rect","rect_m":{"xmin":54.075,"xmax":62.475,"ymin":-25.2,"ymax":-8.4},"source":"Middot 3:3","confidence":"B dimensions / C exact station","status":"candidate","notes":"32×16 cubits. South of altar. Exact E-W station is reconstruction."},
+    {"id":"ULAM_FRONT_100C","geometry":"rect","rect_m":{"xmin":29.925,"xmax":38.325,"ymin":-26.25,"ymax":26.25},"source":"Middot 4:7","confidence":"B","status":"candidate","notes":"Porch shoulders produce 100-cubit façade width."},
+    {"id":"SANCTUARY_BODY_70C","geometry":"rect","rect_m":{"xmin":-14.175,"xmax":29.925,"ymin":-18.375,"ymax":18.375},"source":"Middot 4:7","confidence":"B","status":"candidate","notes":"Josephus gives 60-cubit body as conflict variant."},
+    {"id":"HOLY_OF_HOLIES_INTERIOR","geometry":"rect","rect_m":{"xmin":-5.25,"xmax":5.25,"ymin":-5.25,"ymax":5.25},"source":"Middot 4:7","confidence":"B","status":"candidate","notes":"20×20 cubit interior; H0 is exact plan center."}
+  ],
+  "sanctuary_detail": {
+    "EW_east_to_west": [
+      {"id":"ULAM_WALL_E","cubit":5,"x_m":[35.7,38.325]},
+      {"id":"ULAM_INTERIOR","cubit":11,"x_m":[29.925,35.7]},
+      {"id":"HEKHAL_WALL_E","cubit":6,"x_m":[26.775,29.925]},
+      {"id":"HEKHAL_INTERIOR","cubit":40,"x_m":[5.775,26.775]},
+      {"id":"TRAKSIN","cubit":1,"x_m":[5.25,5.775]},
+      {"id":"HOLY_OF_HOLIES","cubit":20,"x_m":[-5.25,5.25]},
+      {"id":"HEKHAL_WALL_W","cubit":6,"x_m":[-8.4,-5.25]},
+      {"id":"WEST_CELL","cubit":6,"x_m":[-11.55,-8.4]},
+      {"id":"OUTER_WALL_W","cubit":5,"x_m":[-14.175,-11.55]}
+    ],
+    "NS_north_to_south": [
+      {"id":"MESIBBAH_OUTER_WALL_N","cubit":5,"y_m":[15.75,18.375]},
+      {"id":"MESIBBAH","cubit":3,"y_m":[14.175,15.75]},
+      {"id":"CELL_WALL_N","cubit":5,"y_m":[11.55,14.175]},
+      {"id":"CELL_N","cubit":6,"y_m":[8.4,11.55]},
+      {"id":"HEKHAL_WALL_N","cubit":6,"y_m":[5.25,8.4]},
+      {"id":"HEKHAL_INTERIOR","cubit":20,"y_m":[-5.25,5.25]},
+      {"id":"HEKHAL_WALL_S","cubit":6,"y_m":[-8.4,-5.25]},
+      {"id":"CELL_S","cubit":6,"y_m":[-11.55,-8.4]},
+      {"id":"CELL_WALL_S","cubit":5,"y_m":[-14.175,-11.55]},
+      {"id":"WATER_DESCENT","cubit":3,"y_m":[-15.75,-14.175]},
+      {"id":"OUTER_WALL_S","cubit":5,"y_m":[-18.375,-15.75]}
+    ],
+    "vertical": {
+      "total_cubit": 100,
+      "total_m": 52.5,
+      "decomposition_cubit": {
+        "foundation":6,"hekhal_inner":40,"ornament_1":1,"gutter_1":2,"ceiling_1":1,"plaster_1":1,"upper_chamber":40,"ornament_2":1,"gutter_2":2,"ceiling_2":1,"plaster_2":1,"parapet":3,"bird_spikes":1
+      }
+    },
+    "doors": {
+      "ulam_opening":{"h_cubit":40,"w_cubit":20,"h_m":21,"w_m":10.5,"source":"Middot 3:7"},
+      "hekhal_opening":{"h_cubit":20,"w_cubit":10,"h_m":10.5,"w_m":5.25,"source":"Middot 4:1"},
+      "josephus_conflicts":{"ulam_opening":"retain separate Josephus façade/opening variant","hekhal_opening":"retain separate Josephus opening variant; do not average"}
+    },
+    "side_cells": {
+      "count_total":38,"north":15,"south":15,"west":8,
+      "stories":{"north":[5,5,5],"south":[5,5,5],"west":[3,3,2]},
+      "widths_cubit":{"lower":5,"lower_ceiling":6,"middle":6,"middle_ceiling":7,"upper":7},
+      "exact_longitudinal_partition_status":"UNRESOLVED_BY_MISHNAH_NUMERIC_TEXT",
+      "source":"Middot 4:3-4"
+    }
+  },
+  "altar_variants": {
+    "MID": {
+      "source":"Middot 3:1, 3:3","status":"primary_working_variant",
+      "base_cubit":[32,32],"base_m":[16.8,16.8],
+      "profile":[
+        {"rise_cubit":1,"rise_m":0.525,"inset_cubit_each_side":1,"result_plan_cubit":[30,30]},
+        {"rise_cubit":5,"rise_m":2.625,"inset_cubit_each_side":1,"result_plan_cubit":[28,28]}
+      ],
+      "horns":{"count":4,"plan_each_cubit":[1,1],"zone_after_horns_cubit":[26,26]},
+      "priest_walkway":{"width_cubit":1,"hearth_cubit":[24,24]},
+      "foundation_edge_pattern":"full north and west; only 1 cubit on south and east",
+      "height_cubit":10,"height_m":5.25,
+      "ramp":{"length_cubit":32,"width_cubit":16,"length_m":16.8,"width_m":8.4,"side":"south","station":"interpretive"},
+      "note":"Do not model a continuous 26×26 solid tier merely because the horns leave a 26×26 zone; horns are discrete corner elements."
+    },
+    "JOSEPHUS": {
+      "source":"War 5.225","status":"conflict_variant_not_merged",
+      "plan_cubit":[50,50],"plan_m":[26.25,26.25],"height_cubit":15,"height_m":7.875,
+      "placement_note":"For comparison overlays only, center on MID altar unless/until a separate source-constrained station is established."
+    }
+  },
+  "slaughtering_north_of_altar": {
+    "source":"Middot 5:2",
+    "from_altar_to_rings_cubit":8,"from_altar_to_rings_m":4.2,
+    "rings_area_cubit":24,"rings_area_m":12.6,
+    "rings_to_tables_cubit":4,"rings_to_tables_m":2.1,
+    "tables_to_pillars_cubit":4,"tables_to_pillars_m":2.1,
+    "pillars_to_north_wall_cubit":8,"pillars_to_north_wall_m":4.2,
+    "remaining_cubit":25,"remaining_m":13.125,
+    "warning":"Mishnah does not state table-zone or pillar-zone widths separately. Do not invent them in v0.1."
+  },
+  "outer_gates": {
+    "robinson":{"wall":"W","site_rule":"12 m north from SW","span_m":12.9,"confidence":"A/B physical position; current world check uses OSM","center_H0_m":[-70.123314,-253.093822],"center_site_model_xz_m":[0,473]},
+    "barclay":{"wall":"W","site_rule":"80 m north from SW","w_m":5.6,"h_m":8.8,"confidence":"A/B","center_H0_m":[-75.131894,-185.278528],"center_site_model_xz_m":[0,405]},
+    "wilson":{"wall":"W","site_rule":"150 m north from SW","w_m":8.4,"h_m":8.4,"confidence":"C opening reconstruction","center_H0_m":[-80.287786,-115.468667],"center_site_model_xz_m":[0,335]},
+    "warren":{"wall":"W","site_rule":"190 m north from SW","w_m":5,"h_m":7,"confidence":"B/C","center_H0_m":[-83.23401,-75.577317],"center_site_model_xz_m":[0,295]},
+    "double":{"wall":"S","site_rule":"84 m east from SW","w_m":12.6,"h_m":8.6,"confidence":"A/B","center_H0_m":[14.532387,-258.874157],"center_site_model_xz_m":[84,485]},
+    "triple":{"wall":"S","site_rule":"170 m east from SW","w_m":15.4,"h_m":8.6,"confidence":"A/B","center_H0_m":[100.298789,-252.539776],"center_site_model_xz_m":[170,485]},
+    "shushan":{"wall":"E","site_rule":"215.2 m south from NE","w_m":10.5,"h_m":11.55,"confidence":"C exact historical opening/form","center_H0_m":[210,0.6125],"center_site_model_xz_m":[298.04931,240.615461]},
+    "tadi":{"wall":"N","site_rule":"200 m east from NW","w_m":5.25,"h_m":10.5,"confidence":"B text / C site station","center_H0_m":[95.029636,216.837824],"center_site_model_xz_m":[199.317414,16.509301]}
+  },
+  "unresolved": [
+    {"id":"WORLD_HORIZONTAL","severity":"blocker_for_submetre_claim","detail":"Current world alignment RMS 3.125 m; improve control points before claiming ≤1 m absolute position."},
+    {"id":"WORLD_VERTICAL","severity":"blocker","detail":"Historical platform vertical datum is unresolved; relative architectural levels are locked but WGS84/terrain z is not."},
+    {"id":"INTERNAL_SITING","severity":"variant","detail":"H0 within 500-cubit square follows current Ritmeyer-based siting. Keep as reconstruction variant, not archaeological fact."},
+    {"id":"SIDE_CELL_LONGITUDINAL_PARTITIONS","severity":"detail","detail":"Middot gives counts/stories/widths but not a complete numeric longitudinal subdivision."},
+    {"id":"NORTH_SLAUGHTER_TABLE_PILLAR_WIDTHS","severity":"detail","detail":"Middot 5:2 fixes spacing chain but not separate table/pillar zone widths."},
+    {"id":"GATE_IDENTIFICATIONS","severity":"variant","detail":"Josephus gate dimensions and Middot doorway dimensions describe different/contested classes; do not force one-to-one identity."}
+  ],
+  "sources": {
+    "Middot_2_1":"https://www.sefaria.org/Mishnah_Middot.2.1",
+    "Middot_2_5":"https://www.sefaria.org/Mishnah_Middot.2.5",
+    "Middot_3_1":"https://www.sefaria.org/Mishnah_Middot.3.1",
+    "Middot_4_3":"https://www.sefaria.org/English_Explanation_of_Mishnah_Middot.4.3",
+    "Middot_4_7":"https://www.sefaria.org/Mishnah_Middot.4.7",
+    "Middot_5_1":"https://www.sefaria.org/English_Explanation_of_Mishnah_Middot.5.1",
+    "Josephus_War_5":"https://lexundria.com/j_bj/5.184-5.247/wst",
+    "Ritmeyer_52_5cm":"https://www.ritmeyer.com/wp-content/uploads/2019/06/translation-1.pdf",
+    "current_site_model":"vendor/3d-temple-mount/src/40-data.js",
+    "current_alignment":"data/herod-temple/spec/world_alignment.json"
+  }
+}
