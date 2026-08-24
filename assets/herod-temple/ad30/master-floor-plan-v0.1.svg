@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-125 -235 355 520" width="900" height="1320">
+<style>
+.bg{fill:#0f1720}.outer{fill:#d9a3530d;stroke:#d9a353;stroke-width:1.4}
+.sq{fill:none;stroke:#58a6ff;stroke-width:1;stroke-dasharray:5 3}
+.court{fill:#4dd0a512;stroke:#4dd0a5;stroke-width:.8}.women{fill:#4da3ff16;stroke:#4da3ff;stroke-width:.8}
+.chamber{fill:#78909c22;stroke:#9aa9b5;stroke-width:.5}.altar{fill:#ff9f4335;stroke:#ff9f43;stroke-width:1}
+.jos{fill:none;stroke:#ff4d6d;stroke-width:1;stroke-dasharray:4 3}.temple{fill:#f6d36520;stroke:#f6d365;stroke-width:1}
+.hoh{fill:#ffd70040;stroke:#ff3b30;stroke-width:1.4}.axis{stroke:#ff3b30;stroke-width:.55}
+.txt{font:5px Arial,sans-serif;fill:#dbe5ee}.dim{font:4.2px Arial,sans-serif;fill:#9fb0c0}
+.title{font:7px Arial,sans-serif;font-weight:bold;fill:#f5e6b3}.note{font:4px Arial,sans-serif;fill:#9fb0c0}
+</style>
+<rect class="bg" x="-125" y="-235" width="355" height="520"/>
+<text class="title" x="-115" y="-222">Herod Temple · Master Floor Plan v0.1</text>
+<text class="note" x="-115" y="-214">H0 = Holy of Holies center · +X East · +Y North · 1 unit = 1 m · cubit = 0.525 m</text>
+<text class="note" x="-115" y="-207">Dimension-locked local plan. World alignment is provisional (RMS 3.125 m); vertical datum unresolved.</text>
+<polygon class="outer" points="-104.962,-218.621 210.000,-215.812 210.000,244.438 -69.239,265.061"/>
+<polygon class="sq" points="-52.500,-85.313 210.000,-85.313 210.000,177.188 -52.500,177.188"/>
+<rect class="court" x="-19.950" y="-35.438" width="98.175" height="70.875"/>
+<rect class="women" x="78.225" y="-35.438" width="70.875" height="70.875"/>
+<rect class="chamber" x="128.100" y="-35.438" width="21.000" height="21.000"/>
+<rect class="chamber" x="128.100" y="14.438" width="21.000" height="21.000"/>
+<rect class="chamber" x="78.225" y="-35.438" width="21.000" height="21.000"/>
+<rect class="chamber" x="78.225" y="14.438" width="21.000" height="21.000"/>
+<rect class="court" x="72.450" y="-35.438" width="5.775" height="70.875"/>
+<rect class="court" x="66.675" y="-35.438" width="5.775" height="70.875"/>
+<rect class="altar" x="49.875" y="-8.400" width="16.800" height="16.800"/>
+<rect class="altar" x="54.075" y="8.400" width="8.400" height="16.800"/>
+<rect class="temple" x="29.925" y="-26.250" width="8.400" height="52.500"/>
+<rect class="temple" x="-14.175" y="-18.375" width="44.100" height="36.750"/>
+<rect class="hoh" x="-5.250" y="-5.250" width="10.500" height="10.500"/>
+<rect class="jos" x="45.150" y="-13.125" width="26.250" height="26.250"/>
+<line class="axis" x1="-30" y1="0" x2="165" y2="0"/><line class="axis" x1="0" y1="-45" x2="0" y2="45"/>
+<circle cx="0" cy="0" r="2.2" fill="#ff3b30" stroke="#fff" stroke-width=".5"/>
+<text class="txt" x="-106" y="-200">N ↑</text>
+<text class="txt" x="-30" y="-37">Azarah 187×135c / 98.175×70.875m</text>
+<text class="txt" x="98" y="-39">Court of Women 135×135c / 70.875m</text>
+<text class="txt" x="52" y="-10">Altar MID 32×32c</text>
+<text class="txt" x="47" y="18">JOS altar 50×50c (conflict)</text>
+<text class="txt" x="2" y="-21">Sanctuary body 70c</text>
+<text class="txt" x="31" y="-28">Ulam front 100c</text>
+<text class="txt" x="-4" y="-7">H0 / Holy of Holies 20×20c</text>
+<text class="txt" x="128" y="-26">40c chamber</text>
+<text class="txt" x="78" y="-42">Israel 11c</text>
+<text class="txt" x="66" y="-42">Priests 11c</text>
+<text class="dim" x="-113" y="235">Outer platform current model: N 314.975m · E 460.250m · S 280.000m · W 485.000m</text>
+<text class="dim" x="-113" y="243">500-cubit square: 262.500m · margins hypothesis W62c / N95c / E116c / S270c</text>
+<text class="dim" x="-113" y="251">Inner E→W checksum: Israel11 + Priests11 + Altar32 + gap22 + Sanctuary100 + rear11 = 187c</text>
+<text class="dim" x="-113" y="259">Sanctuary E→W: 5 + 11 + 6 + 40 + 1 + 20 + 6 + 6 + 5 = 100c</text>
+<text class="dim" x="-113" y="267">Sanctuary N→S: 5 + 3 + 5 + 6 + 6 + 20 + 6 + 6 + 5 + 3 + 5 = 70c</text>
+<text class="dim" x="-113" y="275">Never scale/rotate/nudge to satellite imagery. Adjust only world_alignment.json control anchors.</text>
+</svg>
