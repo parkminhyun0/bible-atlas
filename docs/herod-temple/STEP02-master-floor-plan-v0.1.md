@@ -10,7 +10,8 @@ Status: **geometry baseline generated; absolute world alignment remains provisio
   - `H0 = Holy of Holies center`
   - `+E east`, `+N north`, `+U up`
   - H0 in current GLB/site frame = `[88.574617, 0, 225.758621] m`
-  - H0 derived WGS84 using the current alignment = `31.77813725, 35.23521037`
+  - H0 derived WGS84 using the current Cesium alignment = `31.7781297571, 35.2352091871`
+  - this WGS84 value is **derived from the current provisional alignment**, not a new archaeological fact
 - Architectural frame rotation relative to the existing site frame:
   - `E basis in site XZ = [0.997283737526, 0.073655596301]`
   - `N basis in site XZ = [0.073655596301, -0.997283737526]`
