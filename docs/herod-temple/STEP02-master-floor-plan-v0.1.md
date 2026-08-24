@@ -11,10 +11,17 @@ Status: **geometry baseline generated; absolute world alignment remains provisio
   - `+E east`, `+N north`, `+U up`
   - H0 in current GLB/site frame = `[88.574617, 0, 225.758621] m`
   - H0 derived WGS84 using the current alignment = `31.77813725, 35.23521037`
+- Architectural frame rotation relative to the existing site frame:
+  - `E basis in site XZ = [0.997283737526, 0.073655596301]`
+  - `N basis in site XZ = [0.073655596301, -0.997283737526]`
+  - precinct rotation vs site +X = `4.223980°`
+  - derived world azimuth: `+E = 86.483980°`, `+N = 356.483980°`
 - Conversion:
-  - `x_site = H0_x + E`
+  - `x_site = H0_x + 0.997283737526*E + 0.073655596301*N`
   - `y_site = U`
-  - `z_site = H0_z - N`
+  - `z_site = H0_z + 0.073655596301*E - 0.997283737526*N`
+  - inverse: `E = 0.997283737526*(x-H0_x) + 0.073655596301*(z-H0_z)`
+  - inverse: `N = 0.073655596301*(x-H0_x) - 0.997283737526*(z-H0_z)`
 - **Never** resize, skew, or visually fit this plan to imagery, blank spaces, present-day paving, or the Dome of the Rock footprint.
 - Runtime scale is locked at `1.0`.
 - Current horizontal world alignment is still `alignment-provisional`: RMS `3.125 m`, max control residual `4.36 m`.
