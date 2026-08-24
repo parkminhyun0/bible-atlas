@@ -122,7 +122,7 @@ function buildScene(){
       });
     };` : '';
   vm.runInContext(code + terrainOverride + '\n;globalThis.__scene = buildScene();' +
-                  'globalThis.__X = { CUBIT, PLAT, LEV };', ctx);
+                  'globalThis.__X = { CUBIT, PLAT, LEV, SQ_NW, U_EAST, V_SOUTH };', ctx);
   return { scene: ctx.__scene, X: ctx.__X };
 }
 
@@ -140,6 +140,9 @@ function pushBuffer(view){
 
 function main(){
   const { scene, X } = buildScene();
+  /* 성역 발자국을 재는 기준. 상수를 여기서 다시 쓰지 않고 상류가 계산한 값을
+     그대로 가져온다 — 두 벌을 두면 한쪽만 고쳐지는 사고가 난다. */
+  const { SQ_NW, U_EAST, V_SOUTH } = X;
   const V = scene.vertices, I = scene.indices, S = 9;   // stride(float)
 
   const gltf = { asset:{ version:'2.0',
@@ -195,6 +198,21 @@ function main(){
     return gltf.materials.length - 1;
   };
 
+/* ── 성역 자리 비우기 (--carve-precinct) ──────────────────────────────
+   성역 안쪽은 herod-temple-interior.glb 를 옮겨 심은 interior-v2.glb 가
+   맡는다(tools/herod-temple/build-interior.mjs). 두 모델을 그대로 겹치면
+   뜰 벽과 계단이 두 벌로 서고 z-파이팅이 난다.
+
+   그래서 성역 발자국 안에서 **포장면보다 위에 있는 것만** 걷어낸다. 포장면
+   자체는 남긴다 — 상류 LEV.chel = ESP 라서 헬 바닥이 곧 이방인의 뜰 포장면이고,
+   새 모델은 헬 바닥을 따로 갖고 오지 않는다. 포장면까지 지우면 성역 밑에
+   구멍이 남는다.
+
+   발자국은 옛 500규빗 정방형의 로컬 좌표(북서 모서리 기준, u 동쪽·v 남쪽 m)로
+   잰다. 성역은 동벽에 평행해서 대지 축과 4.22° 어긋나 있으므로, 축에 나란한
+   사각형으로는 정확히 못 자른다. */
+const CARVE = argv.includes('--carve-precinct');
+const CARVE_BOX = { u0:27.0, u1:208.0, v0:41.0, v1:129.0, y:0.30, yMax:0.60 };
   const interactiveLayer = layer => layer === 'stairsChel' || layer.startsWith('door') || layer.startsWith('veil');
   const used = scene.draws.filter(d =>
     (LAYERS.includes(d.layer) || interactiveLayer(d.layer) ||
@@ -203,7 +221,8 @@ function main(){
   const byLayer = new Map();
   used.forEach(d => { if (!byLayer.has(d.layer)) byLayer.set(d.layer, []); byLayer.get(d.layer).push(d); });
 
-  let tris = 0, verts = 0, dropped = 0;
+  let tris = 0, verts = 0, dropped = 0, carved = 0;
+  const emptied = [];
   for (const [layer, draws] of byLayer){
     const primitives = [];
     for (const d of draws){
@@ -238,6 +257,14 @@ function main(){
         const cz = (pos[a * 3 + 2] + pos[b2 * 3 + 2] + pos[c2 * 3 + 2]) / 3;
         const clipBounds = d.mat === 'terrain' ? TERRAIN_BOUNDS : BOUNDS;
         if (cx < clipBounds.x0 || cx > clipBounds.x1 || cz < clipBounds.z0 || cz > clipBounds.z1){ dropped += 3; continue; }
+        if (CARVE && d.mat !== 'terrain'){
+          const cy   = (pos[a * 3 + 1] + pos[b2 * 3 + 1] + pos[c2 * 3 + 1]) / 3;
+          const yTop = Math.max(pos[a * 3 + 1], pos[b2 * 3 + 1], pos[c2 * 3 + 1]);
+          const u = (cx - SQ_NW[0]) * U_EAST[0] + (cz - SQ_NW[1]) * U_EAST[1];
+          const v = (cx - SQ_NW[0]) * V_SOUTH[0] + (cz - SQ_NW[1]) * V_SOUTH[1];
+          if (u > CARVE_BOX.u0 && u < CARVE_BOX.u1 && v > CARVE_BOX.v0 && v < CARVE_BOX.v1 &&
+              (cy > CARVE_BOX.y || yTop > CARVE_BOX.yMax)){ carved += 3; continue; }
+        }
         keep.push(a, b2, c2);
       }
       if (!keep.length) continue;
@@ -262,6 +289,10 @@ function main(){
                         indices:aIdx, material:materialFor(d.mat), mode:4 });
       tris += idx.length / 3; verts += n;
     }
+    /* 삼각형이 하나도 안 남은 레이어는 통째로 뺀다. primitives 가 빈 메시는
+       glTF 규격 위반이라 Cesium 이 로드에 실패한다. --carve-precinct 로
+       성역을 비우면 sanct·interior·veil* 이 통째로 비게 된다. */
+    if (!primitives.length){ emptied.push(layer); continue; }
     gltf.meshes.push({ name:layer, primitives });
     gltf.nodes.push({ name:layer, mesh:gltf.meshes.length - 1 });
     gltf.scenes[0].nodes.push(gltf.nodes.length - 1);
@@ -294,6 +325,8 @@ function main(){
   console.log('  파일       ', path.relative(ROOT, OUT));
   console.log('  레이어     ', [...byLayer.keys()].join(', '));
   console.log('  뺀 재질    ', DROP_MATERIALS.join(', ') || '(없음)');
+  if (CARVE) console.log('  성역 비움  ', `${carved / 3} 삼각형 (interior-v2.glb 가 채운다)`);
+  if (emptied.length) console.log('  빈 레이어  ', emptied.join(', '));
   console.log('  좌표 범위  ', 'X '+BOUNDS.x0+'~'+BOUNDS.x1+' · Z '+BOUNDS.z0+'~'+BOUNDS.z1+' m · 범위 밖으로 버린 삼각형 '+Math.round(dropped/3).toLocaleString());
   console.log('  삼각형     ', Math.round(tris).toLocaleString(), '· 정점', verts.toLocaleString());
   console.log('  재질       ', gltf.materials.length, '개 —', gltf.materials.map(m => m.name).join(', '));

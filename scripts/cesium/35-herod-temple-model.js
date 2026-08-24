@@ -28,11 +28,24 @@ window.BibleAtlasTempleModel = (function () {
     model_south_axis_azimuth_deg: 172.26,
   };
   /* GLB 도 같은 이유로 버전을 붙인다. 모델을 다시 구우면 이 값을 올린다. */
-  const GLB_VERSION = '20260819c';
-  const GLB_URL = './assets/herod-temple/ad30/lod1.glb?v=' + GLB_VERSION;
+  const GLB_VERSION = '20260824a';
+  /* lod1.glb 를 쓰지 않는다. 그 파일은 1인칭 순례 화면(temple-experience.html)
+     과 공유하는데, 그쪽은 doorCourt_*·veilOuter·sanct 같은 노드 이름으로
+     상호작용을 건다. 성역을 도려내면 그 화면이 깨진다(실제로 한 번 깼다).
+     그래서 도려낸 판은 별도 파일로 굽는다:
+       node tools/herod-temple/export-glb.cjs --carve-precinct \
+            --out assets/herod-temple/ad30/mount-outer.glb */
+  const GLB_URL = './assets/herod-temple/ad30/mount-outer.glb?v=' + GLB_VERSION;
+  /* 성역 안쪽은 별도 GLB 다.
+     2026-08-24 조사(data/herod-temple/03_모델_비교_이방인의_뜰.md) 결론:
+     이방인의 뜰은 상류(openbibleinfo)가, 성역 안쪽은 새 모델이 낫다. 그래서
+     mount-outer 는 성역 자리를 비운 채 굽고(export-glb.cjs --carve-precinct),
+     그 자리를 interior-v2 가 채운다. 두 모델은 같은 로컬 프레임을 쓰므로 modelMatrix 가
+     같다 — 따로 정합할 것이 없다. */
+  const INTERIOR_URL = './assets/herod-temple/ad30/interior-v2.glb?v=' + GLB_VERSION;
   const ALIGN_URL = './data/herod-temple/spec/world_alignment.json';
 
-  let viewer = null, model = null, align = null, loading = null;
+  let viewer = null, model = null, interior = null, align = null, loading = null;
 
   /* 모델 Y=0(이방인의 뜰 포장면)을 놓을 절대 높이.
      역사 기준면이 확정되기 전까지는 현대 지형의 대지 표고를 쓴다. */
@@ -95,6 +108,24 @@ window.BibleAtlasTempleModel = (function () {
       });
       model = viewer.scene.primitives.add(m);
       applyAmbient(model);
+      /* 성역 안쪽. 같은 행렬·같은 축 설정으로 올린다. 여기서 값을 다시 쓰면
+         한쪽만 고쳐지는 사고가 난다. */
+      const inner = await Cesium.Model.fromGltfAsync({
+        url: INTERIOR_URL,
+        modelMatrix: buildMatrix(align, h),
+        scale: 1.0,
+        upAxis: Cesium.Axis.Y,
+        forwardAxis: Cesium.Axis.X,
+        shadows: Cesium.ShadowMode.RECEIVE_ONLY,
+        backFaceCulling: true,
+        imageBasedLighting: undefined,
+      });
+      interior = viewer.scene.primitives.add(inner);
+      applyAmbient(interior);
+      interior.readyEvent.addEventListener(() => {
+        console.log('[헤롯 성전] 성역 내부 로드 완료');
+        viewer.scene.requestRender();
+      });
       model.readyEvent.addEventListener(() => {
         hideLegacyTemple(true);
         applyTerrainClipping(true);
@@ -201,6 +232,7 @@ window.BibleAtlasTempleModel = (function () {
 
   function setVisible(on){
     if (model) model.show = !!on;
+    if (interior) interior.show = !!on;
     hideLegacyTemple(!!on);          // 모델을 끄면 기존 상자형이 다시 보인다
   }
   function isLoaded(){ return !!model; }
@@ -225,5 +257,5 @@ window.BibleAtlasTempleModel = (function () {
 
   return { load, setVisible, isLoaded, alignment, flyTo, hideLegacyTemple,
            applyTerrainClipping, templeFootprint, historicTerrainFootprint,
-           get model(){ return model; } };
+           get model(){ return model; }, get interior(){ return interior; } };
 })();
