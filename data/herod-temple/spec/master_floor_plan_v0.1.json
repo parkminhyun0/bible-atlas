@@ -9,7 +9,7 @@
   "placement_contract": {
     "cesium_runtime": "scripts/cesium/35-herod-temple-model.js",
     "world_alignment_ssot": "data/herod-temple/spec/world_alignment.json",
-    "placement_rule": "Never fit/scale the floor plan to imagery, blank space, or current map silhouette. Use the existing modelMatrix from world_alignment.json at scale 1.0.",
+    "placement_rule": "Never fit/scale the floor plan to imagery, blank space, or current map silhouette. Use the existing modelMatrix from world_alignment.json at scale 1.0. The architectural frame is rotated with the sacred precinct; do not treat site +X/+Z as the sanctuary axes.",
     "site_frame": {
       "origin": "Herodian platform NW corner",
       "axes": "+X east, +Y up, +Z south",
@@ -17,14 +17,26 @@
     },
     "architectural_frame": {
       "origin": "H0 = Holy of Holies center at finished architectural datum",
-      "axes": "+E east, +N north, +U up",
+      "axes": "+E sacred-precinct east, +N sacred-precinct north, +U up",
       "site_frame_H0_m": [88.574617, 0, 225.758621],
-      "derived_world_lat_lng": [31.77813725, 35.23521037]
+      "derived_world_lat_lng": [31.77813725, 35.23521037],
+      "basis_in_site_XZ": {
+        "E": [0.997283737526, 0.073655596301],
+        "N": [0.073655596301, -0.997283737526],
+        "precinct_rotation_deg_vs_site_X": 4.22398,
+        "derived_world_azimuth_E_deg": 86.48398,
+        "derived_world_azimuth_N_deg": 356.48398
+      }
     },
     "arch_to_site_formula": {
-      "x_site": "H0_x + E",
+      "x_site": "H0_x + 0.997283737526*E + 0.073655596301*N",
       "y_site": "U",
-      "z_site": "H0_z - N"
+      "z_site": "H0_z + 0.073655596301*E - 0.997283737526*N"
+    },
+    "site_to_arch_formula": {
+      "E": "0.997283737526*(x_site-H0_x) + 0.073655596301*(z_site-H0_z)",
+      "N": "0.073655596301*(x_site-H0_x) - 0.997283737526*(z_site-H0_z)",
+      "U": "y_site"
     },
     "horizontal_alignment": {
       "status": "alignment-provisional",
