@@ -22,19 +22,19 @@ git    = 발행된 스냅샷          (published snapshot)
 | 1 | Evidence Registry | `d0f66314-6df5-4d09-9af7-d0011323f175` | `registry/evidence_registry.json/.csv` | ✅ 57행 |
 | 2 | Measurement Registry | `b4dc7879-072f-4aa8-8a4d-716ced0bd781` | `registry/measurement_registry.json/.csv` | ✅ 200행 |
 | 3 | Structure Registry | `bf4a1e1e-a10d-4002-a568-0c5e7c2dab52` | `registry/structure_registry.json` | ✅ 28행 |
-| 4 | Drawing Registry | `5805f5c2-3d04-4073-85b4-6f690e104a56` | `registry/drawing_registry.json` | ☐ |
-| 5 | Reconstruction Gates | `790af98b-5e0d-443a-9e11-0f21172c9a6d` | `registry/reconstruction_gates.json` | ☐ |
+| 4 | Drawing Registry | `5805f5c2-3d04-4073-85b4-6f690e104a56` | `registry/drawing_registry.json/.csv` | ✅ 78행 |
+| 5 | Reconstruction Gates | `790af98b-5e0d-443a-9e11-0f21172c9a6d` | `registry/reconstruction_gates.json` | ✅ 12행 |
 | 6 | Substructure & Construction | `d2c5bc3c-276f-4878-a56d-cce6dbe8dedc` | `registry/substructure_registry.json` | ✅ 18행 |
-| 7 | Circulation & Access | `e9a56425-4cc5-4b20-b217-ad406854b659` | `registry/circulation_registry.json` | ☐ |
+| 7 | Circulation & Access | `e9a56425-4cc5-4b20-b217-ad406854b659` | `registry/circulation_registry.json` | ✅ 25행 |
 | 8 | Datum & Control Point | `2de78169-eee0-4525-82bd-58d0f99a0041` | `registry/datum_control_registry.json` | ✅ 18행 |
 | 9 | 3D Geometry Input | `d42535ab-566b-4744-88ef-d665c2a3ac4c` | `registry/geometry_input_registry.json` | ✅ 13행 |
-| 10 | Masonry, Material & Surface | `12092486-0975-4277-8f3f-4dd58ffd7548` | `registry/masonry_material_registry.json` | ☐ |
-| 11 | Construction Phase | `4c178529-2592-4964-8c4e-c24240f7e11a` | `registry/construction_phase_registry.json` | ☐ |
-| 12 | Architectural Profile | `543d517e-0025-41f9-8247-b36529734937` | `registry/architectural_profile_registry.json` | ☐ |
-| 13 | 3D Data Completeness Matrix | `98b7b023-0875-4f66-bc57-ad5f3b0d4c7a` | `registry/data_completeness_matrix.json` | ☐ |
-| 14 | Textile, Veil & Weave | `4773d020-b711-4f12-98a8-cf61e6feaa49` | `registry/textile_registry.json` | ☐ |
-| 15 | Sacred Furnishings & Ritual Objects | `7ae07e6e-f689-4e0c-b27e-47d250deb09f` | `registry/sacred_furnishings_registry.json` | ☐ |
-| 16 | Relief, Ornament & Iconography | `b21fe70d-5ab2-42e4-92ec-21c87070ff9a` | `registry/relief_ornament_registry.json` | ☐ |
+| 10 | Masonry, Material & Surface | `12092486-0975-4277-8f3f-4dd58ffd7548` | `registry/masonry_material_registry.json` | ☐ 쿼터 |
+| 11 | Construction Phase | `4c178529-2592-4964-8c4e-c24240f7e11a` | `registry/construction_phase_registry.json` | ☐ 쿼터 |
+| 12 | Architectural Profile | `543d517e-0025-41f9-8247-b36529734937` | `registry/architectural_profile_registry.json` | ☐ 쿼터 |
+| 13 | 3D Data Completeness Matrix | `98b7b023-0875-4f66-bc57-ad5f3b0d4c7a` | `registry/data_completeness_matrix.json` | ☐ 쿼터 |
+| 14 | Textile, Veil & Weave | `4773d020-b711-4f12-98a8-cf61e6feaa49` | `registry/textile_registry.json` | ☐ 쿼터 |
+| 15 | Sacred Furnishings & Ritual Objects | `7ae07e6e-f689-4e0c-b27e-47d250deb09f` | `registry/sacred_furnishings_registry.json` | ☐ 쿼터 |
+| 16 | Relief, Ornament & Iconography | `b21fe70d-5ab2-42e4-92ec-21c87070ff9a` | `registry/relief_ornament_registry.json` | ☐ 쿼터 |
 
 부속: `작업 이력 · Daily Work Log` = `ce0cba77-e824-4f83-aced-0de1330b6894` (history, 이관 대상 아님)
 
