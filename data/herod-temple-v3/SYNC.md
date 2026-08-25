@@ -61,7 +61,7 @@ git    = 발행된 스냅샷          (published snapshot)
 
 ## 스냅샷 시각
 
-모든 이관은 **2026-08-25** 기준 fresh-read 다.
+모든 이관은 **2026-08-25** 기준 fresh-read 다. 9/16 완료 · 449행. 잔여 7종은 Notion Query 쿼터 소진으로 보류 → `registry/_PENDING.md`
 당시 합의 Gate = `STEP07B-6` · STEP07B `84%` · Drawing Index `v0.5 · 64 views`.
 
 ## 알려진 결함
