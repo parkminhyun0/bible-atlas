@@ -36,11 +36,9 @@ window.BibleAtlasLayers = (function () {
      - 근거리: C급/논쟁 지명까지
      - 같은 지점의 "예루살렘" / "예루살렘 · 성전산" 같은 중복은
        중·광역에서 대표 라벨 하나만 남긴다. */
-  const MAJOR_PLACE_NAMES = new Set([
-    '예루살렘','베들레헴','나사렛','가버나움','가이사랴','가이사랴 빌립보',
-    '두로','시돈','사마리아','세겜','벧산','디베랴','가사','욥바','헤브론',
-    '나바테아 왕국 · 페트라'
-  ]);
+  /* 대표 지명 목록은 scripts/data/00-geo.js 에 한 벌만 둔다.
+     MapLibre 판과 다른 목록을 쓰면 같은 지명이 한쪽에서만 사라진다. */
+  const MAJOR_PLACES = MAJOR_PLACE_NAMES;
   const UI_BLOCK_IDS = ['hdr','realCtl','routes','treeDock','profilePanel'];
   const LABEL_CANDIDATES = [
     { x:14, y:0,  h:'left' },  { x:14, y:-20, h:'left' }, { x:14, y:20, h:'left' },
@@ -56,7 +54,7 @@ window.BibleAtlasLayers = (function () {
     return 50;
   }
   function placePriority(p){
-    if (MAJOR_PLACE_NAMES.has(p.n)) return 110;
+    if (MAJOR_PLACES.has(p.n)) return 110;
     return p.disputed ? 54 : 74;
   }
   function registerLabel(entity, meta){
@@ -65,21 +63,37 @@ window.BibleAtlasLayers = (function () {
   }
   function minPriorityForHeight(height){
     /* 우선순위는 '누구를 먼저 놓을지' 정하는 값이고, 실제로 몇 개를 띄울지는
-       아래 충돌 판정이 결정한다. 기준을 높게 잡으면 화면에 자리가 남는데도
-       지명이 통째로 빠지므로, 축척에 맞는 최소선만 남긴다. */
-    if (height > 400000) return 96;    // 지구 규모: 대표 도시 + 주요 고증점
-    if (height > 180000) return 72;    // 광역: 일반 지명까지
-    if (height > 80000) return 64;     // 지방: B급 고증점까지
-    if (height > 35000) return 56;     // 권역: 논쟁 지명까지
-    return 0;                          // 근거리·지면: 전부
+       아래 충돌 판정이 결정한다.
+       [수정] 앞 판본은 축척별 최소선을 높게 잡아, 화면에 자리가 남아 있는데도
+       비정 논쟁 지명(가나·벳새다·수가·아이논 …)과 B·C급 고증점의 라벨을
+       통째로 뺐다. 기본 시점(고도 400 km)에서만 라벨 67개 중 37개가 빠져,
+       빨간 점만 있고 이름이 없는 지명이 화면 곳곳에 남았다.
+       이제는 지구 규모에서만 대표 도시로 줄이고, 그 아래에서는 자리가 있으면
+       모두 띄운다 — 실제로 겹칠 때에만 우선순위가 낮은 라벨이 물러난다. */
+    if (height > 1200000) return 96;   // 지구 규모: 대표 도시 + 주요 고증점
+    return 0;                          // 그 아래: 자리 다툼(충돌 판정)에 맡긴다
   }
+  /* 라벨 상자 크기 — 글자 수로 어림하지 않고 실제 글꼴로 잰다.
+     앞 판본은 한 글자를 fontPx 만큼으로 보고 최소 46 px 을 깔아, 두 글자짜리
+     지명('가나'·'수가')의 상자를 실제보다 10 px 넘게 크게 잡았다. 그만큼
+     이웃 라벨과 먼저 부딪혀, 자리가 있는데도 라벨이 빠지는 원인이 됐다.
+     비정 논쟁 표시(' *')도 실제로 그려지므로 빼지 않고 함께 잰다. */
+  const labelMetricsCtx = (typeof document !== 'undefined')
+    ? document.createElement('canvas').getContext('2d') : null;
   function estimateLabelSize(item){
-    const text = String(item.text || '').replace(/\s*\*\s*$/, '');
-    const lines = text.split('\n');
-    const maxChars = Math.max(...lines.map(line => [...line].length), 1);
+    const lines = String(item.text || '').split('\n');
+    const font = `${item.fontWeight || 600} ${item.fontPx}px "Noto Sans KR", sans-serif`;
+    let textWidth = 0;
+    if (labelMetricsCtx){
+      labelMetricsCtx.font = font;
+      lines.forEach(line => { textWidth = Math.max(textWidth, labelMetricsCtx.measureText(line).width); });
+    } else {
+      textWidth = Math.max(...lines.map(line => [...line].length), 1) * item.fontPx;
+    }
     return {
-      width: Math.min(260, Math.max(46, maxChars * item.fontPx * 1.02 + 18)),
-      height: lines.length * (item.fontPx + 6) + 10,
+      // 배경 여백(backgroundPadding 5×3)과 외곽선을 더한 실제 상자
+      width: Math.min(260, Math.ceil(textWidth) + 14),
+      height: lines.length * (item.fontPx + 4) + 8,
     };
   }
   function candidateRect(anchor, candidate, size){
@@ -295,7 +309,7 @@ window.BibleAtlasLayers = (function () {
         text,
         kind:'site',
         priority:sitePriority(s),
-        fontPx:14,
+        fontPx:14, fontWeight:700,
       });
     });
   }
@@ -362,7 +376,7 @@ window.BibleAtlasLayers = (function () {
         text,
         kind:'place',
         priority:placePriority(p),
-        fontPx:13,
+        fontPx:13, fontWeight:600,
       });
     });
   }

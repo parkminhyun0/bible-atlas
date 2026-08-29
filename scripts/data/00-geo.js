@@ -82,6 +82,20 @@ const GRADE_TEXT = {
      refs  신약 본문 근거  (신약에 나오지 않는 곳은 비워 두고 desc 로 배경만 적는다)
      desc  1세기 배경      발굴 소견과 문헌(요세푸스 등)을 함께 적는다
    disputed 는 위치 비정이 갈리는 곳 — 라벨 우선순위를 낮추는 데도 쓰인다. */
+/* 라벨 자리 다툼에서 먼저 자리를 잡는 대표 지명.
+   index.html(MapLibre)의 symbol-sort-key 와 cesium.html 의 스마트 라벨이
+   이 목록 하나를 함께 쓴다 — 두 화면에서 지명이 밀려나는 순서를 같게 두려는 것이다. */
+const MAJOR_PLACE_NAMES = new Set([
+  '예루살렘','베들레헴','나사렛','가버나움','가이사랴','가이사랴 빌립보',
+  '두로','시돈','세바스테','세겜','벧산','디베랴','가사','욥바','헤브론',
+  '나바테아 왕국 · 페트라'
+]);
+/* 라벨 배치 우선순위 — 값이 작을수록 먼저 자리를 잡는다(symbol-sort-key 규약). */
+function placeLabelPriority(p){
+  if (MAJOR_PLACE_NAMES.has(p.n)) return 0;
+  if (p.disputed) return 3;
+  return (p.grade || 'B') === 'A' ? 1 : 2;
+}
 const KEY_PLACES = [
   // ── 유대 (예루살렘 권역·유대 산지) ──
   { n:'예루살렘',   lng:35.2345, lat:31.7767, r:'유대', pid:'687928', grade:'A',
