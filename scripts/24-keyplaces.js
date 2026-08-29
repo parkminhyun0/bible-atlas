@@ -10,7 +10,8 @@ function addKeyPlaceLayers(){
     type:'FeatureCollection',
     features: KEY_PLACES.map((p, i) => ({
       type:'Feature', id: 1000 + i,
-      properties:{ idx:i, label:p.n, region:p.r, disputed: p.disputed ? 1 : 0 },
+      properties:{ idx:i, label:p.n, region:p.r, disputed: p.disputed ? 1 : 0,
+                   prio: placeLabelPriority(p) },
       geometry:{ type:'Point', coordinates:[p.lng, p.lat] },
     })),
   }});
@@ -26,19 +27,28 @@ function addKeyPlaceLayers(){
       'circle-pitch-alignment':'map',
     },
   });
+  /* 라벨은 자리가 없으면 지도 엔진이 통째로 감춘다. 앞 판본은 자리를 왼쪽
+     한 곳으로 못박아 두어서, 이웃 지명과 글자 상자가 겹치는 순간 라벨이
+     사라졌다 — 빨간 점만 남고 이름이 없는 지명이 광역 화면에서 스무 곳 가까이
+     나왔다(가나·벳새다·수가·그리심산·게네사렛·막달라 …).
+     text-variable-anchor 로 여덟 방향 후보 자리를 주면 엔진이 빈 쪽으로 글자를
+     옮겨 놓는다. 점 좌표는 그대로이므로 지명이 지점을 벗어나지 않는다.
+     (cesium.html 의 LABEL_CANDIDATES 와 같은 해법을 MapLibre 문법으로 쓴 것) */
   map.addLayer({
     id:'place-label', type:'symbol', source:'keyPlaces',
     layout:{
       'text-field':['case',['==',['get','disputed'],1], ['concat',['get','label'],' *'], ['get','label']],
       'text-font':['Open Sans Regular'],
-      'text-size':['interpolate',['linear'],['zoom'], 6,10, 9,11.5, 13,13.5, 16,15],
-      'text-anchor':'left',
-      'text-offset':[0.7, 0],
-      'text-padding':2,
+      'text-size':['interpolate',['linear'],['zoom'], 6,9.5, 9,10.8, 13,13.5, 16,15],
+      'text-variable-anchor':['left','right','top','bottom',
+                              'top-left','top-right','bottom-left','bottom-right'],
+      'text-radial-offset':0.9,   // 앞 판본의 text-offset 0.7em 과 같은 거리감
+      'text-justify':'auto',
+      'text-padding':1,
       'text-allow-overlap':false,
-      'text-optional':true,
       'text-max-width':10,
-      'symbol-sort-key':1,     // 고증 포인트(rank 0~2)보다 뒤에 자리를 잡는다
+      // 값이 작을수록 먼저 자리를 잡는다. 대표 지명 → A급 → B급 → 비정 논쟁지 순.
+      'symbol-sort-key':['get','prio'],
     },
     paint:{
       'text-color':'#ffd9d4',
