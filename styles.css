@@ -118,6 +118,8 @@
     font-size:.6rem;opacity:.9;letter-spacing:0}
 
   .chipDivider{height:1px;background:#40352277;margin:2px 4px;width:90%}
+  .chip:disabled{opacity:.42;cursor:not-allowed;filter:grayscale(.7)}
+  .chip:disabled:hover{filter:grayscale(.7)}
   .chip.tog{opacity:.55}
   .chip.tog.on{opacity:1;border-color:var(--gold)}
   .chip.tog.on::before{content:'✓ ';color:var(--gold);font-weight:700}

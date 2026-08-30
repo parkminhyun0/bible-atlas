@@ -378,7 +378,13 @@
       duration: 2.0,
     });
   });
+  /* 2026-08-24 — 성역 모델 재작업 중이라 잠시 막아 둔다(박 목사님 지시).
+     cesium.html 의 disabled 속성만으로도 클릭은 막히지만, 그 속성이 지워지거나
+     다른 코드가 프로그램으로 click() 을 부를 수 있으므로 여기서도 막는다.
+     되살릴 때 이 상수를 false 로 두고 cesium.html 의 disabled 를 지운다. */
+  const TEMPLE_VIEW_DISABLED = true;
   on('templeView', 'click', () => {
+    if (TEMPLE_VIEW_DISABLED) return;
     const v = V();
     if (!v) return;
     const carto = Cesium.Cartographic.fromCartesian(v.camera.positionWC);
