@@ -40,12 +40,16 @@ window.BibleAtlasLayers = (function () {
      MapLibre 판과 다른 목록을 쓰면 같은 지명이 한쪽에서만 사라진다. */
   const MAJOR_PLACES = MAJOR_PLACE_NAMES;
   const UI_BLOCK_IDS = ['hdr','realCtl','routes','treeDock','profilePanel'];
+  /* 이름표를 점에 붙인다. 점 반지름이 핵심 지명 6.5px·고증 포인트 7.5px 이므로
+     가로 10px 이면 점 가장자리에서 3px 안팎에 글자가 선다(앞 판본 14px 은 7.5px 떨어졌다).
+     세로 한가운데 자리(h:'center')는 상자 높이 절반이 13px 이라 23px 이 같은 간격이 된다.
+     MapLibre 판 text-radial-offset 0.6em 과 같은 거리감이다. */
   const LABEL_CANDIDATES = [
-    { x:14, y:0,  h:'left' },  { x:14, y:-20, h:'left' }, { x:14, y:20, h:'left' },
-    { x:-14,y:0,  h:'right' }, { x:-14,y:-20,h:'right' }, { x:-14,y:20,h:'right' },
-    { x:0,  y:-26,h:'center'}, { x:0,  y:26, h:'center'},
-    { x:18, y:-40,h:'left' },  { x:-18,y:-40,h:'right'},
-    { x:18, y:40, h:'left' },  { x:-18,y:40, h:'right'}
+    { x:10, y:0,  h:'left' },  { x:10, y:-20, h:'left' }, { x:10, y:20, h:'left' },
+    { x:-10,y:0,  h:'right' }, { x:-10,y:-20,h:'right' }, { x:-10,y:20,h:'right' },
+    { x:0,  y:-23,h:'center'}, { x:0,  y:23, h:'center'},
+    { x:13, y:-40,h:'left' },  { x:-13,y:-40,h:'right'},
+    { x:13, y:40, h:'left' },  { x:-13,y:40, h:'right'}
   ];
 
   function sitePriority(s){
@@ -183,7 +187,10 @@ window.BibleAtlasLayers = (function () {
 
     const cameraHeight = Math.max(0, Number(viewer.camera.positionCartographic?.height) || 0);
     const minPriority = minPriorityForHeight(cameraHeight);
-    const gap = cameraHeight < 8000 ? 2 : 5;
+    // 이름표 상자 사이 최소 간격. 후보 자리를 점 쪽으로 당기면서(LABEL_CANDIDATES)
+    // 상자들이 서로 조금 더 가까워졌다. 광역에서 5px 을 그대로 두면 그만큼
+    // 이름표가 더 빠지므로 3px 로 낮춘다.
+    const gap = cameraHeight < 8000 ? 2 : 3;
     const occupied = uiObstacles(canvasRect);
     const acceptedAnchors = [];
     const time = viewer.clock && viewer.clock.currentTime;
@@ -291,7 +298,7 @@ window.BibleAtlasLayers = (function () {
           showBackground: true,
           backgroundColor: css('#171310', 0.62),
           backgroundPadding: new Cesium.Cartesian2(5, 3),
-          pixelOffset: new Cesium.Cartesian2(12, 0),
+          pixelOffset: new Cesium.Cartesian2(10, 0),
           horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
           verticalOrigin: Cesium.VerticalOrigin.CENTER,
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
