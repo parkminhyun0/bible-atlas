@@ -39,12 +39,19 @@ function addKeyPlaceLayers(){
     layout:{
       'text-field':['case',['==',['get','disputed'],1], ['concat',['get','label'],' *'], ['get','label']],
       'text-font':['Open Sans Regular'],
-      'text-size':['interpolate',['linear'],['zoom'], 6,9.5, 9,10.8, 13,13.5, 16,15],
+      // 광역 축척에서만 조금 줄인다. 갈릴리 호수 둘레처럼 점이 몰린 구역에서
+      // 글자 상자가 서로 밀어내 이름표가 통째로 빠지던 것을 막는다.
+      // z13 이상(읽는 축척)의 크기는 건드리지 않는다.
+      'text-size':['interpolate',['linear'],['zoom'], 6,8.0, 9,9.8, 13,13.5, 16,15],
       'text-variable-anchor':['left','right','top','bottom',
                               'top-left','top-right','bottom-left','bottom-right'],
-      'text-radial-offset':0.9,   // 앞 판본의 text-offset 0.7em 과 같은 거리감
+      /* 점과 이름표 사이 간격. em 단위이므로 글자 크기에 비례한다.
+         0.9em 은 점에서 너무 멀어 이름이 어느 점의 것인지 읽기 어려웠다.
+         점 반지름이 z6 2.6px → z16 7px, 글자가 8px → 15px 이므로
+         0.6em 이면 어느 축척에서나 점 가장자리로부터 3px 안팎으로 붙는다. */
+      'text-radial-offset':0.6,
       'text-justify':'auto',
-      'text-padding':1,
+      'text-padding':0,
       'text-allow-overlap':false,
       'text-max-width':10,
       // 값이 작을수록 먼저 자리를 잡는다. 대표 지명 → A급 → B급 → 비정 논쟁지 순.

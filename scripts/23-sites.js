@@ -56,9 +56,9 @@ function addSitePointLayers(){
       // 핵심 지명 라벨과 같은 규칙 — 자리가 없으면 감추기 전에 여덟 방향을 먼저 시도한다
       'text-variable-anchor':['left','right','top','bottom',
                               'top-left','top-right','bottom-left','bottom-right'],
-      'text-radial-offset':0.9,
+      'text-radial-offset':0.6,   // 핵심 지명 라벨과 같은 간격 — 24-keyplaces.js 주석 참조
       'text-justify':'auto',
-      'text-padding':1,
+      'text-padding':0,
       'text-allow-overlap':false,
       'symbol-sort-key':['get','rank'],
       'text-max-width':11,
